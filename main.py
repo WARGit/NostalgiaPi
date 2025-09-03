@@ -264,8 +264,15 @@ class Schedule:
 @dataclass
 class System:
     restarthour: int
-    restartminute: List[int]
+    restartminute: int
 
+    @classmethod
+    def from_dict(cls, data: Dict) -> "System":
+        """Factory to build a System from JSON dict with proper type conversion."""
+        return cls(
+            restarthour=int(data["restarthour"]),
+            restartminute=int(data["restartminute"])
+        )
 
 # Class representing the config file
 @dataclass
@@ -440,8 +447,10 @@ print(remaining_seconds)
 # ===================== MAIN ===============================
 # ==========================================================
 def main():
+
     # === 03-09-25 -- this little block here is how we setup a playlist and start it.
     # should we calculate what we require for all of our schedules up to the restart time and play like that? e.g. 24 hours at a time
+
     instance = vlc.Instance()
     media_list = instance.media_list_new()
 
@@ -454,9 +463,9 @@ def main():
 
     player = list_player.get_media_player()
 
-    list_player.play()
-    time.sleep(0.5)
-    player.set_fullscreen(True)
+    #list_player.play()
+    #time.sleep(0.5)
+    #player.set_fullscreen(True)
     # ======================
 
     # global keeps track of which files have been played, files are added to this list as they are played
@@ -495,6 +504,11 @@ def main():
         print("durations.json does not exist!")
         print("please run durationanalyzer.py first!")
         exit(1)
+
+    # === Read restart time from rawjson ===
+    # restarttime = {name: System.from_dict(details) for name, details in cfgjson["system"].items()}
+
+    system = System.from_dict(cfgjson["system"])
 
     # === Read schedules from rawjson ===
     schedules = {name: Schedule.from_dict(details) for name, details in cfgjson["schedules"].items()}
