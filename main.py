@@ -442,6 +442,20 @@ def seconds_until(hour: int, minute: int = 0):
 remaining_seconds = seconds_until(17, 59)
 print(remaining_seconds)
 
+def seconds_until_restart(system: System) -> int:
+    now = datetime.now()
+
+    # Build today's restart datetime
+    restart_today = now.replace(hour=system.restarthour,
+                                minute=system.restartminute,
+                                second=0, microsecond=0)
+
+    if now >= restart_today:
+        # Restart time has passed for today → schedule for tomorrow
+        restart_today += timedelta(days=1)
+
+    delta = restart_today - now
+    return int(delta.total_seconds())
 
 # ==========================================================
 # ===================== MAIN ===============================
@@ -506,9 +520,12 @@ def main():
         exit(1)
 
     # === Read restart time from rawjson ===
-    # restarttime = {name: System.from_dict(details) for name, details in cfgjson["system"].items()}
-
     system = System.from_dict(cfgjson["system"])
+
+    # == work out how long we have left before a restart should occur ====
+    secs_left = seconds_until_restart(system)
+    print(f"Seconds until restart: {secs_left}")
+    print(f"Minutes until restart: {secs_left // 60}")
 
     # === Read schedules from rawjson ===
     schedules = {name: Schedule.from_dict(details) for name, details in cfgjson["schedules"].items()}
