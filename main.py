@@ -214,6 +214,7 @@ class Schedule:
     endminute: int  # 0-59
     shows: List[str]
     ads: List[str]
+    bumpers: List[str]  # bumpers are usually only 10 seconds, typical "coming up next type video, used to fill out schedule to get as accurate alignment as possible"
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Schedule":
@@ -228,7 +229,8 @@ class Schedule:
             endhour=int(data["endhour"]),
             endminute=int(data["endminute"]),
             shows=list(data["shows"]),
-            ads=list(data["ads"])
+            ads=list(data["ads"]),
+            bumpers = list(data["bumpers"])
         )
 
     def is_active(self, hour: int, weekday: int, day: int, month: int) -> bool:
@@ -519,14 +521,6 @@ def main():
         print("please run durationanalyzer.py first!")
         exit(1)
 
-    # === Read restart time from rawjson ===
-    system = System.from_dict(cfgjson["system"])
-
-    # == work out how long we have left before a restart should occur ====
-    secs_left = seconds_until_restart(system)
-    print(f"Seconds until restart: {secs_left}")
-    print(f"Minutes until restart: {secs_left // 60}")
-
     # === Read schedules from rawjson ===
     schedules = {name: Schedule.from_dict(details) for name, details in cfgjson["schedules"].items()}
     del cfgjson  # Free up RAM
@@ -560,6 +554,15 @@ def main():
 
     # Get duration of selected_file
     duration = durjson["by_path"].get(selected_file)
+
+    # === Read restart time from rawjson first so we can start ===
+    # === playing the first file and do the rest of the calculations as it plays ===
+    system = System.from_dict(cfgjson["system"])
+
+    # == work out how long we have left before a restart should occur ====
+    secs_left = seconds_until_restart(system)
+    print(f"Seconds until system restart: {secs_left}")
+    print(f"Minutes until system restart: {secs_left // 60}")
 
     # play selected file here
 
