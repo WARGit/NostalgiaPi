@@ -469,6 +469,8 @@ def main():
     global ad_due
     ad_due = 0
 
+    # test
+
     # === Set the config file name accoring to OS ====
     if os.name != "nt":
         CONFIG_FILE_NAME = "config_pi.json"
