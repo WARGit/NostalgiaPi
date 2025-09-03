@@ -1,0 +1,10 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+/misc.xml
+/vcs.xml
+/inspectionProfiles/profiles_settings.xml
+/modules.xml
+/PiTV.iml
