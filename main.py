@@ -636,6 +636,7 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         manager.stop_playback()
+        manager.set_fullscreen(False)
 
     # setup timer thread to wait for this duration and then mark as played
     timer = PlaybackTimer(tracker, durjson)
