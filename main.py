@@ -16,7 +16,6 @@ from numpy.matlib import empty
 
 PLAYED_FILE = "played.json"
 
-
 # 3.0 - including adverts
 # 10 - Backport config file and Add OS detection - Tested on pi, works.
 # 11 - experimented with cv2, added a new class to handle calculating durations - incomplete and TESTED ON PI, CAN WORK IF PACKAGES ARE INSTALLED FIRST
@@ -200,7 +199,6 @@ class MediaScheduler:
             ads_to_play.append(self.ads_pool.pop())
         return ads_to_play
 
-
 # Class representing a schedule from the config file
 @dataclass
 class Schedule:
@@ -313,6 +311,51 @@ class Config:
         # Return as lists (deterministic ordering optional, e.g. sorted)
         return list(shows), list(ads)
 
+class PlaylistManager:
+    def __init__(self, initial_files=None):
+        """Initialize the playlist manager with an optional list of initial files."""
+        self.instance = vlc.Instance()
+        self.media_list = self.instance.media_list_new()
+        self.list_player = self.instance.media_list_player_new()
+        self.list_player.set_media_list(self.media_list)
+
+        # Add initial files if provided
+        if initial_files:
+            for f in initial_files:
+                self.add_to_playlist(f)
+
+    def add_to_playlist(self, file_path):
+        """Add a new media file to the playlist dynamically."""
+        media = self.instance.media_new(file_path)
+        self.media_list.add_media(media)
+        print(f"Added to playlist: {file_path}")
+        print(f"Current playlist count: {self.media_list.count()}")
+
+    def start_playback(self):
+        """Start playing the playlist."""
+        if self.media_list.count() == 0:
+            print("Playlist is empty, nothing to play.")
+            return
+        self.list_player.play()
+        print("Playback started.")
+
+    def stop_playback(self):
+        """Stop the playback."""
+        self.list_player.stop()
+        print("Playback stopped.")
+
+    def is_playing(self):
+        """Check if something is currently playing."""
+        return self.list_player.is_playing()
+
+    def set_fullscreen(self, fullscreen=True):
+        """Make the player fullscreen or windowed."""
+        player = self.list_player.get_media_player()
+        if player:
+            player.set_fullscreen(fullscreen)
+            print(f"Fullscreen set to {fullscreen}")
+        else:
+            print("No media player available yet.")
 
 # Lock to synchronize media changes between threads
 media_lock = threading.Lock()
@@ -467,17 +510,17 @@ def main():
     # === 03-09-25 -- this little block here is how we setup a playlist and start it.
     # should we calculate what we require for all of our schedules up to the restart time and play like that? e.g. 24 hours at a time
 
-    instance = vlc.Instance()
-    media_list = instance.media_list_new()
+    #instance = vlc.Instance()
+    #media_list = instance.media_list_new()
 
-    media_list.add_media(
-        instance.media_new("C:\\Videos\\shows\\test.avi"))
-    media_list.add_media(instance.media_new("C:\\Videos\\ads\\test.mp4"))  # add before playing
+    #media_list.add_media(
+     #   instance.media_new("C:\\Videos\\shows\\test.avi"))
+    #media_list.add_media(instance.media_new("C:\\Videos\\ads\\test.mp4"))  # add before playing
 
-    list_player = instance.media_list_player_new()
-    list_player.set_media_list(media_list)
+    #list_player = instance.media_list_player_new()
+    #list_player.set_media_list(media_list)
 
-    player = list_player.get_media_player()
+    #player = list_player.get_media_player()
 
     #list_player.play()
     #time.sleep(0.5)
@@ -523,7 +566,6 @@ def main():
 
     # === Read schedules from rawjson ===
     schedules = {name: Schedule.from_dict(details) for name, details in cfgjson["schedules"].items()}
-    del cfgjson  # Free up RAM
     config = Config(schedules=schedules)
     del schedules  # Free up RAM
 
@@ -558,13 +600,43 @@ def main():
     # === Read restart time from rawjson first so we can start ===
     # === playing the first file and do the rest of the calculations as it plays ===
     system = System.from_dict(cfgjson["system"])
+    del cfgjson  # Free up RAM
 
     # == work out how long we have left before a restart should occur ====
     secs_left = seconds_until_restart(system)
     print(f"Seconds until system restart: {secs_left}")
     print(f"Minutes until system restart: {secs_left // 60}")
 
-    # play selected file here
+    if os.name == "nt":
+        files = [
+            "C:\\Videos\\shows\\test.avi"
+        ]
+    else:
+        files = [
+            "//home//war//Videos//morningshows//test.mp4"
+        ]
+
+    manager = PlaylistManager(files)
+    manager.start_playback()
+
+    # Make fullscreen
+    time.sleep(1)  # wait a little for player to initialize
+    manager.set_fullscreen(True)
+
+    # Add another file while playing
+    time.sleep(2)
+    if os.name == "nt":
+        manager.add_to_playlist("C:\\Videos\\bumpers\\test.mp4")
+    else:
+        manager.add_to_playlist("//home//war//Videos//ads//test.mp4")
+
+    # Keep script alive so playback continues
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        manager.stop_playback()
+        manager.set_fullscreen(False)
 
     # setup timer thread to wait for this duration and then mark as played
     timer = PlaybackTimer(tracker, durjson)
