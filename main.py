@@ -8,10 +8,6 @@ from tracker import PlayedTracker
 from planner import QueuePlanner
 from player import PlaylistManager
 
-# =========================
-# ========= MAIN ==========
-# =========================
-
 def main():
     # Pick the config file by OS
     CONFIG_FILE_NAME = "config_pi.json" if os.name != "nt" else "config_nt.json"
