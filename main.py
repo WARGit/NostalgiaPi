@@ -35,6 +35,8 @@ def main():
 
     # Plan from now until restart
     now = datetime.now()
+    # WR - THIS PLAYLIST CURRENTLY CONSISTS ONLY OF SHOWS AND SEEMED TO REPEAT ONE PRETTY QUICKLY, SO EACH ITERATION
+    # SHOULD BE REMOVING THE FILES THAT ARE QUEUED FROM THE SHOWS LIST AND WHEN ITS EMPTY IT NEEDS TO RESET
     plan = planner.build_playlist_until_restart(now)
     if not plan:
         print("[INFO] Nothing fits before restart. Exiting.")
