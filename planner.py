@@ -26,39 +26,49 @@ class QueuePlanner:
             if not active:
                 break
 
-            # Gather candidates
+            # Gather all shows, ads & bumpers
             shows = sum((get_media_files(p) for p in active.shows), [])
             ads = sum((get_media_files(p) for p in active.ads), [])
             bumpers = sum((get_media_files(p) for p in active.bumpers), [])
 
-            # Filter with played.json (shows/ads); bumpers can repeat
+            # Filter ads & shows against played.json to find what we are allowed to play
             shows = self.tracker.get_unplayed(shows, "shows")
             ads = self.tracker.get_unplayed(ads, "ads")
 
-            candidate, category, dur = None, None, 0
+            candidate, category, dur = None, None, 0  # make some variables to use
 
             def pick(files: list[str], cat: str):
                 nonlocal candidate, category, dur
                 if not files:
-                    return
-                choice = random.choice(files)
-                d = int(self.durations["by_path"].get(choice, 0))
-                if 0 < d <= secs_left:
-                    candidate, category, dur = choice, cat, d
+                    return False
+                shuffled = files[:]
+                random.shuffle(shuffled)
+                for choice in shuffled:
+                    d = int(self.durations["by_path"].get(choice, 0))
+                    if 0 < d <= secs_left:
+                        candidate, category, dur = choice, cat, d
+                        return True
+                return False
 
-            # try show → ad → bumper
-            pick(shows, "shows")
-            if candidate is None:
-                pick(ads, "ads")
-            if candidate is None:
-                pick(bumpers, "bumpers")
+            # Try to pick a show, then ad, then bumper
+            if not pick(shows, "shows"):
+                if not pick(ads, "ads"):
+                    if not pick(bumpers, "bumpers"):
+                        break  # nothing fits
 
-            if candidate is None:
-                # nothing fits the remaining window
-                break
-
+            # Add chosen item
             playlist.append((candidate, category))
             secs_left -= dur
             current_time += timedelta(seconds=dur)
+
+            # 🔑 If it was a show → add 2 ads immediately (if they fit)
+            if category == "shows":
+                for _ in range(2):
+                    if pick(ads, "ads"):
+                        playlist.append((candidate, category))
+                        secs_left -= dur
+                        current_time += timedelta(seconds=dur)
+                    else:
+                        break  # no ad fits, move on
 
         return playlist
