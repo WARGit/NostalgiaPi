@@ -98,6 +98,7 @@ class Schedule:
     endhour: int            # 0–23
     shows: List[str]
     ads: List[str]
+    bumpers: List[str]
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Schedule":
@@ -110,7 +111,8 @@ class Schedule:
             starthour   =int(data["starthour"]),
             endhour     =int(data["endhour"]),
             shows       =list(data["shows"]),
-            ads         =list(data["ads"])
+            ads         =list(data["ads"]),
+            bumpers     = list(data["bumpers"])
         )
 
     def is_active(self, hour: int, weekday: int, day: int, month: int) -> bool:
@@ -286,6 +288,7 @@ def main():
     for s in config.schedules.values():
         all_media.extend(s.shows)
         all_media.extend(s.ads)
+        all_media.extend(s.bumpers)
 
     # now remove any duplicate paths from the array
     all_media = list(set(all_media))
