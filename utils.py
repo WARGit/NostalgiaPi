@@ -1,9 +1,15 @@
-from models import System
+import subprocess
 import time
 import os
 import sys
 import threading
+import json
+
+from models import System
 from datetime import datetime, timedelta
+
+DURATIONS_JSON = "durations.json"
+DURATIONS_SCRIPT = "durationanalyzer.py"
 
 def seconds_until_restart(system) -> int:
     """Return number of seconds until the next restart time."""
@@ -53,3 +59,31 @@ def start_restart_thread(system: System):
     t.start()
     print("[RESTART] RESTART THREAD STARTED.")
     return t
+
+def ensure_durations(config):
+    """
+    Ensure durations.json is up to date with all media in schedules.
+    If any media files are missing from durations.json, re-run durationanalyzer.py.
+    """
+    # Gather all media files from schedules
+    all_files = []
+    for sched in config.schedules:
+        for group in (sched.shows + sched.ads + sched.bumpers):
+            all_files.extend(get_media_files(group))
+
+    all_files = set(all_files)  # deduplicate
+
+    # Load durations.json (if it exists)
+    durations = {}
+    if os.path.exists(DURATIONS_JSON):
+        with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
+            durations = json.load(f).get("by_path", {})
+
+    # Check if any files are missing
+    missing = [f for f in all_files if f not in durations]
+
+    if missing:
+        print(f"[INFO] {len(missing)} media files missing from {DURATIONS_JSON}, regenerating...")
+        subprocess.run(["python", DURATIONS_SCRIPT], check=True)
+    else:
+        print("[INFO] durations.json is up to date")

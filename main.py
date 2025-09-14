@@ -1,51 +1,13 @@
-import os
-import json
-import time
-from datetime import datetime
-
 from models import Schedule, Config, System
 from tracker import PlayedTracker
 from planner import QueuePlanner
 from player import PlaylistManager
 from utils import *
-import subprocess
-
-### test
 import os
-import sys
 from datetime import datetime, timedelta
-### test
 
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
-
-def ensure_durations(config):
-    """
-    Ensure durations.json is up to date with all media in schedules.
-    If any media files are missing from durations.json, re-run durations.py.
-    """
-    # Gather all media files from schedules
-    all_files = []
-    for sched in config.schedules:
-        for group in (sched.shows + sched.ads + sched.bumpers):
-            all_files.extend(get_media_files(group))
-
-    all_files = set(all_files)  # deduplicate
-
-    # Load durations.json (if it exists)
-    durations = {}
-    if os.path.exists(DURATIONS_JSON):
-        with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-            durations = json.load(f).get("by_path", {})
-
-    # Check if any files are missing
-    missing = [f for f in all_files if f not in durations]
-
-    if missing:
-        print(f"[INFO] {len(missing)} media files missing from {DURATIONS_JSON}, regenerating...")
-        subprocess.run(["python", DURATIONS_SCRIPT], check=True)
-    else:
-        print("[INFO] durations.json is up to date")
 
 def main():
 
