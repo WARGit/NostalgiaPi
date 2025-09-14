@@ -10,6 +10,12 @@ from player import PlaylistManager
 from utils import *
 import subprocess
 
+### test
+import os
+import sys
+from datetime import datetime, timedelta
+### test
+
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
 
@@ -42,6 +48,7 @@ def ensure_durations(config):
         print("[INFO] durations.json is up to date")
 
 def main():
+
     # Pick the config file by OS
     CONFIG_FILE_NAME = "config_pi.json" if os.name != "nt" else "config_nt.json"
 
@@ -56,6 +63,8 @@ def main():
     schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
     system = System.from_dict(raw["system"])
     config = Config(schedules=schedules, system=system)
+    # spin off background thread that restarts script at specified time
+    start_restart_thread(system)
 
     # Loop through all schedules, get all paths and get all files from these paths to make "all_files"
     all_files = []
