@@ -53,16 +53,20 @@ class System:
     restarthour: int
     restartminute: int
 
-    @classmethod
-    def from_dict(cls, data: Dict) -> "System":
-        return cls(
-            restarthour=int(data["restarthour"]),
-            restartminute=int(data["restartminute"]),
+    @staticmethod
+    def from_dict(data: dict) -> "System":
+        return System(
+            restarthour=data.get("restarthour", 2),
+            restartminute=data.get("restartminute", 0)
         )
 
+# Class representing the config file
 @dataclass
 class Config:
-    schedules: Dict[str, Schedule]
+
+    # attribute that
+    schedules: Dict[str, Schedule]  # holds KVP of schedule objects str is the name and Schedule is the object
+    system: System                  # holds the system object representing the config file
 
     def get_active_schedule_at(self, when: datetime) -> Schedule | None:
         active = [

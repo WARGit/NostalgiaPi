@@ -50,13 +50,12 @@ def main():
         print(f"{CONFIG_FILE_NAME} does not exist!")
         return
     with open(CONFIG_FILE_NAME, "r") as f:
-        config = json.load(f)
-
-    # Ensure Durations have been calculated against this config/schedules ---- TO BE TESTED
-    # ensure_durations(cfgjson)
+        raw  = json.load(f)
 
     # Build objects
-    schedules = {name: Schedule.from_dict(d) for name, d in config["schedules"].items()}
+    schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
+    system = System.from_dict(raw["system"])
+    config = Config(schedules=schedules, system=system)
 
     # Loop through all schedules, get all paths and get all files from these paths to make "all_files"
     all_files = []
@@ -70,32 +69,30 @@ def main():
     # We can then compare all_files to the contents of the duration.json file
 
     # Load durations.json (if it exists) and get all items by path
-    durations = {}
+    durationsjson = {}
     if os.path.exists(DURATIONS_JSON):
         with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-            durations = json.load(f).get("by_path", {})
+            durationsjson = json.load(f).get("by_path", {})
 
     # Check if any files are missing from durations.json
-    missing = [f for f in all_files if f not in durations]
+    missing = [f for f in all_files if f not in durationsjson]
 
+    # Evaluate and call duration analyzer script if json is missing any files on disk
     if missing:
         print(f"[INFO] {len(missing)} media files missing from {DURATIONS_JSON}, regenerating...")
         subprocess.run(["python", DURATIONS_SCRIPT], check=True)
     else:
         print("[INFO] durations.json is up to date")
 
-    # Load durations
-    # if not os.path.exists("durations.json"):
-    #     print("durations.json does not exist! Please run durationanalyzer.py first.")
-    #     return
-    #  with open("durations.json", "r") as f:
-    #     durjson = json.load(f)
+    del all_files   # free up ram
 
+    # Now onto the main work...
+    # 1 show and 2 ads now play, timer to hook up, durations to be calculated and pool of shows / ads to be emptied as its used
+    #  and reset accordingly, also update played.json to track items per schedule, so that a rest doesnt rest the items for all schedules
 
-    config = Config(schedules=schedules)
-    system = System.from_dict(config["system"])
+    # construct planner and played tracked, planner to plan what to play, tracker to track played items
     tracker = PlayedTracker()
-    planner = QueuePlanner(config, tracker, durjson, system)
+    planner = QueuePlanner(config, tracker, durationsjson, system)
 
     # Plan from now until restart
     now = datetime.now()
