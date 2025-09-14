@@ -1,0 +1,151 @@
+{
+  "schedules": {
+    "morning": {
+	  "comment": "kids cartoons",
+      "priority": 9,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [0],
+      "starthour": 6,
+	  "startminute": 0,
+      "endhour": 12,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/morningshows"],
+      "ads": ["/home/war/Videos/morningads"]
+    },
+    "afternoon": {
+	  "comment": "afternoon stuff like TOTP or Jerry Springer",
+      "priority": 8,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [0],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 15,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/afternoonshows"],
+      "ads": ["/home/war/Videos/afternoonads"]
+    },
+    "teatime": {
+	  "comment": "teatime, cartoons and shows",
+      "priority": 7,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [0],
+      "starthour": 15,
+	  "startminute": 0,
+      "endhour": 19,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/eveningshows"],
+      "ads": ["/home/war/Videos/eveningads"]
+    },
+    "lateevening": {
+	  "comment": "usually movies but can be other shows too",
+      "priority": 6,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [0],
+      "starthour": 19,
+	  "startminute": 0,
+      "endhour": 2,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/lateeveningshows"],
+      "ads": ["/home/war/Videos/lateeveningads"]
+    },
+    "night": {
+	  "comment": "dead of the night, who knows what is here?",
+      "priority": 5,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [0],
+      "starthour": 2,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/nightshows"],
+      "ads": ["/home/war/Videos/nightads"]
+    },
+    "halloween": {
+	  "comment": "spooky season, lots of horror themed shows",
+      "priority": 4,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [10],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/halloweenshows"],
+      "ads": ["/home/war/Videos/halloweenads"]
+    },
+    "xmas": {
+	  "comment": "Christmas!! loads of christmas movies",
+      "priority": 3,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [12],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/xmasshows"],
+      "ads": ["/home/war/Videos/xmasads"]
+    },
+    "valentines": {
+	  "comment": "valentines day, plenty of rom coms",
+      "priority": 2,
+      "daysofweek": [0],
+      "dates": [14],
+      "months": [2],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/valentinesshows"],
+      "ads": ["/home/war/Videos/valentinesads"]
+    },
+    "newyears": {
+	  "comment": "new years day",
+      "priority": 1,
+      "daysofweek": [0],
+      "dates": [1],
+      "months": [1],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/newyearsshows"],
+      "ads": ["/home/war/Videos/newyearsads"]
+    },
+    "classicscifimonth": {
+	  "comment": "August is 50s/60s classic Sci-Fi month",
+      "priority": 1,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [8],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/classicscifi"],
+      "ads": ["/home/war/Videos/ads-50s60s"]
+    },
+    "dupe": {
+	  "comment": "dupe path test",
+      "priority": 1,
+      "daysofweek": [0],
+      "dates": [0],
+      "months": [8],
+      "starthour": 12,
+	  "startminute": 0,
+      "endhour": 6,
+	  "endminute": 0,
+      "shows": ["/home/war/Videos/classicscifi"],
+      "ads": ["/home/war/Videos/ads-50s60s"]
+    }
+  },
+	"system": {
+		"restarthour": 0,
+		"restartminute": 0  
+  }
+}
