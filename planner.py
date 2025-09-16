@@ -17,26 +17,30 @@ class QueuePlanner:
         self.system = system
 
     def build_playlist_until_restart(self, start_time: datetime) -> list[tuple[str, str]]:
-        playlist: list[tuple[str, str]] = []
-        current_time = start_time
-        secs_left = seconds_until_restart(self.system)
+        playlist: list[tuple[str, str]] = [] # Create a playlist to hold items
+        current_time = start_time           # assign current time as start time
+        secs_left = seconds_until_restart(self.system) # Call method to find out how many secs until restart
 
-        while secs_left > 0:
-            active = self.config.get_active_schedule_at(current_time)
+        # here we get only the current active schedules shows etc, we need to be looping through all schedules until the scheduled reboot to queue up items accordingly
+
+        while secs_left > 0:            # as long as there are seconds left:
+            active = self.config.get_active_schedule_at(current_time)   # get schedule that will be active (current_time is updated as we go round this loop)
             if not active:
+                print(f"[WARN] No schedule active at {current_time}")
                 break
 
-            # Gather all shows, ads & bumpers
+            # Gather all shows, ads & bumpers for the active schedule
             shows = sum((get_media_files(p) for p in active.shows), [])
             ads = sum((get_media_files(p) for p in active.ads), [])
             bumpers = sum((get_media_files(p) for p in active.bumpers), [])
 
-            # Filter ads & shows against played.json to find what we are allowed to play
+            # Filter ads & shows against played.json to find what we are allowed to play during this schedule
             shows = self.tracker.get_unplayed(shows, "shows")
             ads = self.tracker.get_unplayed(ads, "ads")
 
             candidate, category, dur = None, None, 0  # make some variables to use
 
+            # I don't like this here, remove in future, pass vars in and out properly
             def pick(files: list[str], cat: str):
                 nonlocal candidate, category, dur
                 if not files:
@@ -50,24 +54,25 @@ class QueuePlanner:
                         return True
                 return False
 
+            # TODO THIS SECTION NEEDS TO BE MORE DYNAMIC, DON'T JUST PICK 1 SHOW THEN MOVE ON.
             # Try to pick a show, then ad, then bumper
             if not pick(shows, "shows"):
                 if not pick(ads, "ads"):
                     if not pick(bumpers, "bumpers"):
-                        break  # nothing fits
+                        break  # nothing fits - TODO what to do here?
 
             # Add chosen item
-            playlist.append((candidate, category))
-            secs_left -= dur
-            current_time += timedelta(seconds=dur)
+            playlist.append((candidate, category))  # add chosen item to playlist
+            secs_left -= dur                        # Minus duration from seconds left
+            current_time += timedelta(seconds=dur)  # Adjust current time by the duration of the item
 
-            # 🔑 If it was a show → add 2 ads immediately (if they fit)
+            # If it was a show add 2 ads immediately (if they fit)
             if category == "shows":
                 for _ in range(2):
                     if pick(ads, "ads"):
-                        playlist.append((candidate, category))
-                        secs_left -= dur
-                        current_time += timedelta(seconds=dur)
+                        playlist.append((candidate, category))  # append the ad
+                        secs_left -= dur                        # take duration from secs_left
+                        current_time += timedelta(seconds=dur)  # adjust current time
                     else:
                         break  # no ad fits, move on
 

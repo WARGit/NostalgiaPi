@@ -3,8 +3,6 @@ import cv2 # install package opencv-python
 import os  # For file and folder management
 import json
 import random  # For random number generation
-import time
-import threading
 import math
 
 from numpy.matlib import empty

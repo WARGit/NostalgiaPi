@@ -61,6 +61,12 @@ def main():
     # 1 show and 2 ads now play, timer to hook up, durations to be calculated and pool of shows / ads to be emptied as its used
     #  and reset accordingly, also update played.json to track items per schedule, so that a rest doesnt rest the items for all schedules
 
+    # re-read durations json but this time not just by_path
+    del durationsjson # free ram from above
+    if os.path.exists(DURATIONS_JSON):
+        with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
+            durationsjson = json.load(f)
+
     # construct planner and played tracked, planner to plan what to play, tracker to track played items
     tracker = PlayedTracker()
     planner = QueuePlanner(config, tracker, durationsjson, system)
