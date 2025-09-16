@@ -17,11 +17,11 @@ class QueuePlanner:
         self.system = system
 
     def build_playlist_until_restart(self, start_time: datetime) -> list[tuple[str, str]]:
+        """ Builds a playlist that runs from now until the reboot time specified.
+            Takes into account the active schedule at each point in time. """
         playlist: list[tuple[str, str]] = [] # Create a playlist to hold items
         current_time = start_time           # assign current time as start time
         secs_left = seconds_until_restart(self.system) # Call method to find out how many secs until restart
-
-        # here we get only the current active schedules shows etc, we need to be looping through all schedules until the scheduled reboot to queue up items accordingly
 
         while secs_left > 0:            # as long as there are seconds left:
             active = self.config.get_active_schedule_at(current_time)   # get schedule that will be active (current_time is updated as we go round this loop)
@@ -41,7 +41,8 @@ class QueuePlanner:
             candidate, category, dur = None, None, 0  # make some variables to use
 
             # I don't like this here, remove in future, pass vars in and out properly
-            def pick(files: list[str], cat: str):
+            def pick(files: list[str], cat: str, force=False):
+                """ Pick an item to add to playlist, if force=true then it will be forced to pick an item even if it runs over the remaining secs """
                 nonlocal candidate, category, dur
                 if not files:
                     return False
@@ -49,17 +50,15 @@ class QueuePlanner:
                 random.shuffle(shuffled)
                 for choice in shuffled:
                     d = int(self.durations["by_path"].get(choice, 0))
-                    if 0 < d <= secs_left:
+                    if force or (0 < d <= secs_left):
                         candidate, category, dur = choice, cat, d
                         return True
                 return False
 
-            # TODO THIS SECTION NEEDS TO BE MORE DYNAMIC, DON'T JUST PICK 1 SHOW THEN MOVE ON.
-            # Try to pick a show, then ad, then bumper
             if not pick(shows, "shows"):
                 if not pick(ads, "ads"):
-                    if not pick(bumpers, "bumpers"):
-                        break  # nothing fits - TODO what to do here?
+                    if not pick(bumpers, "bumpers", force=True):
+                        break
 
             # Add chosen item
             playlist.append((candidate, category))  # add chosen item to playlist

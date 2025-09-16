@@ -71,7 +71,6 @@ def main():
     tracker = PlayedTracker()
     planner = QueuePlanner(config, tracker, durationsjson, system)
 
-    # Plan from now until restart
     now = datetime.now()
     # WR - THIS PLAYLIST CURRENTLY CONSISTS ONLY OF SHOWS AND SEEMED TO REPEAT ONE PRETTY QUICKLY, SO EACH ITERATION
     # SHOULD BE REMOVING THE FILES THAT ARE QUEUED FROM THE SHOWS LIST AND WHEN ITS EMPTY IT NEEDS TO RESET
