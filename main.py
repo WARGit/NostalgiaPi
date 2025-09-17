@@ -38,8 +38,6 @@ def main():
 
     all_files = set(all_files)  # deduplicate files in the list by creating a new set object (schedules may have shared the same paths)
 
-    # We can then compare all_files to the contents of the duration.json file
-
     # Load durations.json (if it exists) and get all items by path
     durationsjson = {}
     if os.path.exists(DURATIONS_JSON):
@@ -61,24 +59,17 @@ def main():
         print("[INFO] durations.json is up to date")
 
     del all_files   # free up ram
-
-    # Now onto the main work...
-    # 1 show and 2 ads now play, timer to hook up, durations to be calculated and pool of shows / ads to be emptied as its used
-    #  and reset accordingly, also update played.json to track items per schedule, so that a rest doesnt rest the items for all schedules
-
-    # re-read durations json but this time not just by_path
-    del durationsjson # free ram from above
-    # json will always exist, we made sure above
+    del durationsjson  # free ram from above
+    # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure above
     with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
         durationsjson = json.load(f)
 
-    # construct planner, playedTracker and QueueTracker, planner to plan what to play, tracker to track played items, QueuedTracker to track Queued items
-    tracker         = PlayedTracker()
-    queued_tracker  = QueuedTracker()
-    planner         = QueuePlanner(config, tracker, queued_tracker, durationsjson, system)
+    # construct objects
+    tracker         = PlayedTracker() # Track played items
+    queued_tracker  = QueuedTracker() # Track queued items
+    planner         = QueuePlanner(config, tracker, queued_tracker, durationsjson, system) # plans the queue of shows/ads/bumpers
 
-    # WR - THIS PLAYLIST CURRENTLY CONSISTS ONLY OF SHOWS AND SEEMED TO REPEAT ONE PRETTY QUICKLY, SO EACH ITERATION
-    # SHOULD BE REMOVING THE FILES THAT ARE QUEUED FROM THE SHOWS LIST AND WHEN ITS EMPTY IT NEEDS TO RESET
+    # build the playlist
     plan = planner.build_playlist_until_restart(datetime.now())
     if not plan:
         print("[INFO] Nothing fits before restart. Exiting.")
