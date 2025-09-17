@@ -98,8 +98,16 @@ class QueuedTracker:
             self.save()
 
     def get_unqueued(self, files: list[str], category: str) -> list[str]:
+        """Return files not yet queued in this playlist build."""
         return [f for f in files if f not in self.data[category]]
 
     def reset_category(self, category: str):
+        """Reset just one category (shows/ads/bumpers)."""
         self.data[category] = []
         self.save()
+
+    def reset_all(self):
+        """Clear everything (rarely needed)."""
+        self.data = {"shows": [], "ads": [], "bumpers": []}
+        self.save()
+
