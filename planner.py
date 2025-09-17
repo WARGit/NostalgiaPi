@@ -1,4 +1,6 @@
 import random
+import os
+import json
 from datetime import datetime, timedelta
 from models import Config, System
 from tracker import PlayedTracker
@@ -76,3 +78,28 @@ class QueuePlanner:
                         break  # no ad fits, move on
 
         return playlist
+
+class QueuedTracker:
+    def __init__(self, path="queued.json"):
+        self.path = path
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                self.data = json.load(f)
+        else:
+            self.data = {"shows": [], "ads": [], "bumpers": []}
+
+    def save(self):
+        with open(self.path, "w") as f:
+            json.dump(self.data, f, indent=2)
+
+    def mark_queued(self, filepath: str, category: str):
+        if filepath not in self.data[category]:
+            self.data[category].append(filepath)
+            self.save()
+
+    def get_unqueued(self, files: list[str], category: str) -> list[str]:
+        return [f for f in files if f not in self.data[category]]
+
+    def reset_category(self, category: str):
+        self.data[category] = []
+        self.save()
