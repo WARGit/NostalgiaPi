@@ -1,9 +1,10 @@
 from models import Schedule, Config, System
-from tracker import PlayedTracker
+from tracker import PlayedTracker, QueuedTracker
 from planner import QueuePlanner
 from player import PlaylistManager
 from utils import *
 import os
+import json
 from datetime import datetime, timedelta
 
 DURATIONS_JSON = "durations.json"
@@ -44,6 +45,10 @@ def main():
     if os.path.exists(DURATIONS_JSON):
         with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
             durationsjson = json.load(f).get("by_path", {})
+    else:
+        data = {"by_path": {}, "by_duration": {}}
+        with open(DURATIONS_JSON, "w") as f:
+            json.dump(data, f, indent=2)
 
     # Check if any files are missing from durations.json
     missing = [f for f in all_files if f not in durationsjson]
@@ -63,18 +68,18 @@ def main():
 
     # re-read durations json but this time not just by_path
     del durationsjson # free ram from above
-    if os.path.exists(DURATIONS_JSON):
-        with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-            durationsjson = json.load(f)
+    # json will always exist, we made sure above
+    with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
+        durationsjson = json.load(f)
 
-    # construct planner and played tracked, planner to plan what to play, tracker to track played items
-    tracker = PlayedTracker()
-    planner = QueuePlanner(config, tracker, durationsjson, system)
+    # construct planner, playedTracker and QueueTracker, planner to plan what to play, tracker to track played items, QueuedTracker to track Queued items
+    tracker         = PlayedTracker()
+    queued_tracker  = QueuedTracker()
+    planner         = QueuePlanner(config, tracker, queued_tracker, durationsjson, system)
 
-    now = datetime.now()
     # WR - THIS PLAYLIST CURRENTLY CONSISTS ONLY OF SHOWS AND SEEMED TO REPEAT ONE PRETTY QUICKLY, SO EACH ITERATION
     # SHOULD BE REMOVING THE FILES THAT ARE QUEUED FROM THE SHOWS LIST AND WHEN ITS EMPTY IT NEEDS TO RESET
-    plan = planner.build_playlist_until_restart(now)
+    plan = planner.build_playlist_until_restart(datetime.now())
     if not plan:
         print("[INFO] Nothing fits before restart. Exiting.")
         return

@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from models import Config, System
-from tracker import PlayedTracker
+from tracker import PlayedTracker, QueuedTracker
 from utils import get_media_files, seconds_until_restart
 
 class QueuePlanner:
@@ -12,9 +12,11 @@ class QueuePlanner:
     honoring active schedule at each point in time and using durations
     from durations["by_path"].
     """
-    def __init__(self, config: Config, tracker: PlayedTracker, durations: dict, system: System):
+
+    def __init__(self, config: Config, tracker: PlayedTracker, queue_tracker: QueuedTracker, durations: dict, system: System):
         self.config = config
         self.tracker = tracker
+        self.queue_tracker = queue_tracker
         self.durations = durations
         self.system = system
 
@@ -40,10 +42,13 @@ class QueuePlanner:
             shows = self.tracker.get_unplayed(shows, "shows")
             ads = self.tracker.get_unplayed(ads, "ads")
 
-            candidate, category, dur = None, None, 0  # make some variables to use
+            # Filter ads and shows against queued.json to find out what hasn't already been queued up
+            shows = self.queue_tracker.get_unqueued(shows, "shows")
+            ads = self.queue_tracker.get_unqueued(ads, "ads")
 
-            # I don't like this here, remove in future, pass vars in and out properly
-            def pick(files: list[str], cat: str, force=False):
+            candidate, category, dur = None, None, 0
+
+            def pick(files: list[str], cat: str, force= False):
                 """ Pick an item to add to playlist, if force=true then it will be forced to pick an item even if it runs over the remaining secs """
                 nonlocal candidate, category, dur
                 if not files:
@@ -51,63 +56,53 @@ class QueuePlanner:
                 shuffled = files[:]
                 random.shuffle(shuffled)
                 for choice in shuffled:
+                    print(f"[INFO] choice: {choice}")
                     d = int(self.durations["by_path"].get(choice, 0))
-                    if force or (0 < d <= secs_left):
+                    print(f"[INFO] d: {d}")
+                    if d <= 0:  # if the choice doesn't fit move onto the next iteration
+                        print(f"[WARN] choice did not fit!")
+                        continue
+                    if force or d <= secs_left:         # otherwise if it fits or force is true then
+                        print(f"[INFO] force: {force}, d: {d}, secs_left: {secs_left}")
+                        print(f"[INFO] assign candidate: {choice}")
+                        print(f"[INFO] assign category: {cat}")
+                        print(f"[INFO] assign dur: {d}")
                         candidate, category, dur = choice, cat, d
+                        # mark immediately as queued if show/ad
+                        if cat in ("shows", "ads"):
+                            print(f"[INFO] cat is in shows / ads")
+                            self.queue_tracker.mark_queued(choice, cat)
+                            print(f"[INFO] Returning true")
                         return True
+                print(f"[INFO] Returning false")
                 return False
 
+            # Try to pick something
             if not pick(shows, "shows"):
                 if not pick(ads, "ads"):
                     if not pick(bumpers, "bumpers", force=True):
-                        break
+                        break  # nothing fits (very unlikely with bumpers)
 
-            # Add chosen item
-            playlist.append((candidate, category))  # add chosen item to playlist
-            secs_left -= dur                        # Minus duration from seconds left
-            current_time += timedelta(seconds=dur)  # Adjust current time by the duration of the item
+            if candidate is None:
+                break
 
-            # If it was a show add 2 ads immediately (if they fit)
+            if secs_left <= 240:
+                print(f"[INFO] secs_left: {secs_left}")
+
+            playlist.append((candidate, category))
+            secs_left -= dur
+            current_time += timedelta(seconds=dur)
+
+            # If we just added a show then add 2 ads immediately (if they fit)
             if category == "shows":
                 for _ in range(2):
                     if pick(ads, "ads"):
                         playlist.append((candidate, category))  # append the ad
-                        secs_left -= dur                        # take duration from secs_left
+                        secs_left -= dur  # take duration from secs_left
                         current_time += timedelta(seconds=dur)  # adjust current time
                     else:
-                        break  # no ad fits, move on
+                        break  # no ad fits, move on # TODO change to continue instead?
+
 
         return playlist
-
-class QueuedTracker:
-    def __init__(self, path="queued.json"):
-        self.path = path
-        if os.path.exists(path):
-            with open(path, "r") as f:
-                self.data = json.load(f)
-        else:
-            self.data = {"shows": [], "ads": [], "bumpers": []}
-
-    def save(self):
-        with open(self.path, "w") as f:
-            json.dump(self.data, f, indent=2)
-
-    def mark_queued(self, filepath: str, category: str):
-        if filepath not in self.data[category]:
-            self.data[category].append(filepath)
-            self.save()
-
-    def get_unqueued(self, files: list[str], category: str) -> list[str]:
-        """Return files not yet queued in this playlist build."""
-        return [f for f in files if f not in self.data[category]]
-
-    def reset_category(self, category: str):
-        """Reset just one category (shows/ads/bumpers)."""
-        self.data[category] = []
-        self.save()
-
-    def reset_all(self):
-        """Clear everything (rarely needed)."""
-        self.data = {"shows": [], "ads": [], "bumpers": []}
-        self.save()
 
