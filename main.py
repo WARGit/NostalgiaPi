@@ -1,9 +1,10 @@
 from models import Schedule, Config, System
-from tracker import PlayedTracker
+from tracker import PlayedTracker, QueuedTracker
 from planner import QueuePlanner
 from player import PlaylistManager
 from utils import *
 import os
+import json
 from datetime import datetime, timedelta
 
 DURATIONS_JSON = "durations.json"
@@ -37,13 +38,15 @@ def main():
 
     all_files = set(all_files)  # deduplicate files in the list by creating a new set object (schedules may have shared the same paths)
 
-    # We can then compare all_files to the contents of the duration.json file
-
     # Load durations.json (if it exists) and get all items by path
     durationsjson = {}
     if os.path.exists(DURATIONS_JSON):
         with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
             durationsjson = json.load(f).get("by_path", {})
+    else:
+        data = {"by_path": {}, "by_duration": {}}
+        with open(DURATIONS_JSON, "w") as f:
+            json.dump(data, f, indent=2)
 
     # Check if any files are missing from durations.json
     missing = [f for f in all_files if f not in durationsjson]
@@ -56,20 +59,18 @@ def main():
         print("[INFO] durations.json is up to date")
 
     del all_files   # free up ram
+    del durationsjson  # free ram from above
+    # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure above
+    with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
+        durationsjson = json.load(f)
 
-    # Now onto the main work...
-    # 1 show and 2 ads now play, timer to hook up, durations to be calculated and pool of shows / ads to be emptied as its used
-    #  and reset accordingly, also update played.json to track items per schedule, so that a rest doesnt rest the items for all schedules
+    # construct objects
+    tracker         = PlayedTracker() # Track played items
+    queued_tracker  = QueuedTracker() # Track queued items
+    planner         = QueuePlanner(config, tracker, queued_tracker, durationsjson, system) # plans the queue of shows/ads/bumpers
 
-    # construct planner and played tracked, planner to plan what to play, tracker to track played items
-    tracker = PlayedTracker()
-    planner = QueuePlanner(config, tracker, durationsjson, system)
-
-    # Plan from now until restart
-    now = datetime.now()
-    # WR - THIS PLAYLIST CURRENTLY CONSISTS ONLY OF SHOWS AND SEEMED TO REPEAT ONE PRETTY QUICKLY, SO EACH ITERATION
-    # SHOULD BE REMOVING THE FILES THAT ARE QUEUED FROM THE SHOWS LIST AND WHEN ITS EMPTY IT NEEDS TO RESET
-    plan = planner.build_playlist_until_restart(now)
+    # build the playlist
+    plan = planner.build_playlist_until_restart(datetime.now())
     if not plan:
         print("[INFO] Nothing fits before restart. Exiting.")
         return

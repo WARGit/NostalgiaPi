@@ -31,17 +31,22 @@ class PlaylistManager:
         if not media:
             return
         mrl = media.get_mrl()  # e.g., file:///path/to/video.mp4
-        category = self.category_by_mrl.get(mrl)
+        category = self.category_by_mrl.get(mrl)  # 'file:///c:/Videos/bumpers/test.mp4'
         # Convert MRL to a plain path if you prefer to store paths:
         path = mrl
         if mrl.startswith("file://"):
-            # Linux/Mac: file:///home/pi/file.mp4
-            # Windows: file:///C:/Videos/file.mp4
-            path = mrl.replace("file://", "", 1)
-            if os.name != "nt":
-                # libvlc URL-encodes spaces etc; best-effort decode
-                import urllib.parse
-                path = urllib.parse.unquote(path)
+            # strip the file:// prefix
+            raw = mrl.replace("file:///", "", 1)
+
+            # decode URL escapes like %20 → space
+            raw = urllib.parse.unquote(raw)
+
+            if os.name == "nt":
+                # On Windows, VLC gives forward slashes; fix them
+                raw = raw.replace("/", "\\")
+            path = os.path.normpath(raw)
+        else:
+            path = mrl
 
         if category:
             print(f"[EVENT] Finished: {path} ({category}) → marking played")
