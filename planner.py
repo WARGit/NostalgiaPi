@@ -30,14 +30,17 @@ class QueuePlanner:
         # Maintain per-schedule in-memory lists of available shows/ads
         schedule_pools: dict[str, dict[str, list[str]]] = {}
 
+        # Track last played per schedule/category
+        last_played: dict[tuple[str, str], str] = {}
+
         while secs_left > 0:
-            active = self.config.get_active_schedule_at(current_time)
+            active = self.config.get_active_schedule_at(current_time)   # get the active schedule object for the time (time is shifted as we build the playlist)
             if not active:
                 print(f"[WARN] No schedule active at {current_time}")
                 break
 
             # find the schedule name (dict key) for this schedule object
-            schedule_name = next((n for n, s in self.config.schedules.items() if s is active), None)
+            schedule_name = next((n for n, s in self.config.schedules.items() if s is active), None)    # get the name of the schedule
             if schedule_name is None:
                 schedule_name = "unknown"
 
@@ -56,14 +59,14 @@ class QueuePlanner:
 
             # Reset per-schedule played/queued if pools exhausted
             for category in ("shows", "ads"):
-                if not pool[category]:
-                    self.tracker.reset_if_exhausted(schedule_name, category)
-                    self.queue_tracker.reset_if_exhausted(schedule_name, category)
-                    # re-gather files from disk
-                    files = sum((get_media_files(p) for p in getattr(active, category)), [])
-                    pool[category] = files
+                if not pool[category]:      # if the list of "shows" or "ads" is empty
+                    self.tracker.reset_if_exhausted(schedule_name, category)    # reset the json
+                    self.queue_tracker.reset_if_exhausted(schedule_name, category)  #reset the json
 
-            candidate, category, dur = None, None, 0
+                    files = sum((get_media_files(p) for p in getattr(active, category)), []) # re-gather files from disk
+                    pool[category] = files  # refill the pool
+
+            candidate, category, dur = None, None, 0    # setup an object to be filled by pick method
 
             def pick(files: list[str], cat: str, force=False):
                 nonlocal candidate, category, dur
@@ -71,7 +74,13 @@ class QueuePlanner:
                     return False
                 shuffled = files[:]
                 random.shuffle(shuffled)
+
+                # avoid repeating the last played if possible
+                last = last_played.get((schedule_name, cat))
                 for choice in shuffled:
+                    if choice == last and len(shuffled) > 1:
+                        continue  # skip immediate repeat after reset
+
                     d = int(self.durations["by_path"].get(choice, 0))
                     if d <= 0:
                         continue
@@ -81,6 +90,8 @@ class QueuePlanner:
                             self.queue_tracker.mark_queued(schedule_name, choice, cat)
                         # remove picked file from in-memory pool
                         files.remove(choice)
+                        # update last played
+                        last_played[(schedule_name, cat)] = choice
                         return True
                 return False
 
