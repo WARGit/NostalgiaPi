@@ -49,15 +49,18 @@ class Schedule:
         return in_hour and in_dow and in_month and in_date
 
 @dataclass
+@dataclass
 class System:
-    restarthour: int
-    restartminute: int
+    action: str   # "restart" or "shutdown"
+    hour: int
+    minute: int
 
     @staticmethod
     def from_dict(data: dict) -> "System":
         return System(
-            restarthour=data.get("restarthour", 2),
-            restartminute=data.get("restartminute", 0)
+            action=data.get("action", "restart"),  # default to restart if missing
+            hour=data.get("hour", 2),              # default 02:00 if missing
+            minute=data.get("minute", 0)           # default to 0 if missing
         )
 
 # Class representing the config file
