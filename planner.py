@@ -104,6 +104,32 @@ class QueuePlanner:
             if candidate is None:
                 break
 
+            # If we are about to play a show, randomly add a bumper before it based on config file value
+            if category == "shows" and pool["bumpers"]:
+                if random.random() < self.system.bumper_chance:
+                    bumper_candidate, bumper_dur = None, 0
+
+                    def pick_bumper(files: list[str]):
+                        nonlocal bumper_candidate, bumper_dur
+                        if not files:
+                            return False
+                        shuffled = files[:]
+                        random.shuffle(shuffled)
+                        for choice in shuffled:
+                            d = int(self.durations["by_path"].get(choice, 0))
+                            if d <= 0:
+                                continue
+                            bumper_candidate, bumper_dur = choice, d
+                            return True
+                        return False
+
+                    if pick_bumper(pool["bumpers"]):
+                        # Append bumper first
+                        playlist.append((bumper_candidate, "bumpers"))
+                        secs_left -= bumper_dur
+                        current_time += timedelta(seconds=bumper_dur)
+                        print(f"[BUMPER] Inserted {bumper_candidate} ({bumper_dur}s) before show")
+
             playlist.append((candidate, category))
             secs_left -= dur
             current_time += timedelta(seconds=dur)

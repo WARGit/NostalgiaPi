@@ -49,18 +49,19 @@ class Schedule:
         return in_hour and in_dow and in_month and in_date
 
 @dataclass
-@dataclass
 class System:
     action: str   # "restart" or "shutdown"
     hour: int
     minute: int
+    bumper_chance: float
 
     @staticmethod
     def from_dict(data: dict) -> "System":
         return System(
             action=data.get("action", "restart"),  # default to restart if missing
             hour=data.get("hour", 2),              # default 02:00 if missing
-            minute=data.get("minute", 0)           # default to 0 if missing
+            minute=data.get("minute", 0),           # default to 0 if missing
+            bumper_chance = float(data.get("bumper_chance", 0.5)) # default to 50% chance
         )
 
 # Class representing the config file
