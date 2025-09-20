@@ -1,6 +1,4 @@
 import random
-import os
-import json
 from datetime import datetime, timedelta
 from models import Config, System
 from tracker import PlayedTracker, QueuedTracker

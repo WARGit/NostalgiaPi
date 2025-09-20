@@ -73,7 +73,7 @@ def start_restart_thread(system: System):
 def ensure_durations(config):
     """
     Ensure durations.json is up to date with all media in schedules.
-    If any media files are missing from durations.json, re-run durationanalyzer.py.
+    If any media files are missing from durations.json, re-run durationanalyzer.py
     """
     # Gather all media files from schedules
     all_files = []
