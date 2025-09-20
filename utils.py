@@ -4,6 +4,7 @@ import os
 import sys
 import threading
 import json
+import logging
 
 from models import System
 from datetime import datetime, timedelta
@@ -97,3 +98,21 @@ def ensure_durations(config):
         subprocess.run(["python", DURATIONS_SCRIPT], check=True)
     else:
         print("[INFO] durations.json is up to date")
+
+def setup_logging(system):
+
+    # if we are not to log then return
+    if not system.create_debug_file:
+        return
+
+    # TODO Delete log file here if exists
+
+    log_level = logging.DEBUG
+    handlers = [logging.StreamHandler()]  # allows us to always log to console
+    handlers.append(logging.FileHandler("debug.log", mode="a"))
+
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=handlers
+    )

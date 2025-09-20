@@ -6,6 +6,7 @@ from utils import *
 import os
 import json
 from datetime import datetime, timedelta
+from utils import setup_logging
 
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
@@ -22,10 +23,13 @@ def main():
     with open(CONFIG_FILE_NAME, "r") as f:
         raw  = json.load(f)
 
-    # Build objects
+    # Build objects and setup logging
     schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
     system = System.from_dict(raw["system"])
     config = Config(schedules=schedules, system=system)
+    setup_logging(config.system)  # enable logging as per flag in system part of config
+    logging.info("Initialization complete")
+
     # spin off background thread that restarts script at specified time
     start_restart_thread(system)
 

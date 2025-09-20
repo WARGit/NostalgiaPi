@@ -56,6 +56,7 @@ class System:
     hour: int
     minute: int
     bumper_chance: float
+    create_debug_file: bool = False  # default = off
 
     @staticmethod
     def from_dict(data: dict) -> "System":
@@ -63,7 +64,8 @@ class System:
             action=data.get("action", "restart"),  # default to restart if missing
             hour=data.get("hour", 2),              # default 02:00 if missing
             minute=data.get("minute", 0),           # default to 0 if missing
-            bumper_chance = float(data.get("bumper_chance", 0.5)) # default to 50% chance
+            bumper_chance = float(data.get("bumper_chance", 0.5)), # default to 50% chance
+            create_debug_file = bool(data.get("CreateDebugFile", False)) # determines if debug log will be used
         )
 
 # Class representing the config file
@@ -86,5 +88,7 @@ class Config:
         ]
         if not active:
             return None
+
+
         # priority 1 is highest
         return sorted(active, key=lambda s: s.priority)[0]
