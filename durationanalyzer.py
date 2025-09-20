@@ -136,7 +136,7 @@ class Schedule:
         now = datetime.now()
         return self.is_active(
             hour=now.hour,
-            weekday=(now.weekday() + 1),  # shift datetime 0–6 to human readable 1–7
+            weekday=(now.weekday() + 1),  # shift datetime from 0–6 to 1–7. 0 means any day
             day=now.day,
             month=now.month
         )

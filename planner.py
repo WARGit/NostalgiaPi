@@ -1,6 +1,4 @@
 import random
-import os
-import json
 from datetime import datetime, timedelta
 from models import Config, System
 from tracker import PlayedTracker, QueuedTracker
@@ -21,73 +19,114 @@ class QueuePlanner:
         self.system = system
 
     def build_playlist_until_restart(self, start_time: datetime) -> list[tuple[str, str]]:
-        """ Builds a playlist that runs from now until the reboot time specified.
-            Takes into account the active schedule at each point in time. """
-        playlist: list[tuple[str, str]] = [] # Create a playlist to hold items
-        current_time = start_time           # assign current time as start time
-        secs_left = seconds_until_restart(self.system) # Call method to find out how many secs until restart
+        """Builds a playlist that runs from now until the reboot time specified.
+           Takes into account the active schedule at each point in time."""
+        playlist: list[tuple[str, str]] = []
+        current_time = start_time
+        secs_left = seconds_until_restart(self.system)
 
-        while secs_left > 0:            # as long as there are seconds left:
-            active = self.config.get_active_schedule_at(current_time)   # get schedule that will be active (current_time is updated as we go round this loop)
+        # Maintain per-schedule in-memory lists of available shows/ads
+        schedule_pools: dict[str, dict[str, list[str]]] = {}
+
+        # Track last played per schedule/category
+        last_played: dict[tuple[str, str], str] = {}
+
+        while secs_left > 0:
+            active = self.config.get_active_schedule_at(current_time)   # get the active schedule object for the time (time is shifted as we build the playlist)
             if not active:
                 print(f"[WARN] No schedule active at {current_time}")
                 break
 
-            # Gather all shows, ads & bumpers for the active schedule
-            shows = sum((get_media_files(p) for p in active.shows), [])
-            ads = sum((get_media_files(p) for p in active.ads), [])
-            bumpers = sum((get_media_files(p) for p in active.bumpers), [])
+            # find the schedule name (dict key) for this schedule object
+            schedule_name = next((n for n, s in self.config.schedules.items() if s is active), None)    # get the name of the schedule
+            if schedule_name is None:
+                schedule_name = "unknown"
 
-            # Filter ads & shows against played.json to find what we are allowed to play during this schedule
-            shows = self.tracker.get_unplayed(shows, "shows")
-            ads = self.tracker.get_unplayed(ads, "ads")
+            # Initialize pools for this schedule if not already
+            if schedule_name not in schedule_pools:
+                shows = sum((get_media_files(p) for p in active.shows), [])
+                ads = sum((get_media_files(p) for p in active.ads), [])
+                bumpers = sum((get_media_files(p) for p in active.bumpers), [])
+                schedule_pools[schedule_name] = {
+                    "shows": shows,
+                    "ads": ads,
+                    "bumpers": bumpers
+                }
 
-            # Filter ads and shows against queued.json to find out what hasn't already been queued up
-            shows = self.queue_tracker.get_unqueued(shows, "shows")
-            ads = self.queue_tracker.get_unqueued(ads, "ads")
+            pool = schedule_pools[schedule_name]
 
-            candidate, category, dur = None, None, 0
+            # Reset per-schedule played/queued if pools exhausted
+            for category in ("shows", "ads"):
+                if not pool[category]:      # if the list of "shows" or "ads" is empty
+                    self.tracker.reset_if_exhausted(schedule_name, category)    # reset the json
+                    self.queue_tracker.reset_if_exhausted(schedule_name, category)  #reset the json
 
-            def pick(files: list[str], cat: str, force= False):
-                """ Pick an item to add to playlist, if force=true then it will be forced to pick an item even if it runs over the remaining secs """
+                    files = sum((get_media_files(p) for p in getattr(active, category)), []) # re-gather files from disk
+                    pool[category] = files  # refill the pool
+
+            candidate, category, dur = None, None, 0    # setup an object to be filled by pick method
+
+            def pick(files: list[str], cat: str, force=False):
                 nonlocal candidate, category, dur
                 if not files:
                     return False
                 shuffled = files[:]
                 random.shuffle(shuffled)
+
+                # avoid repeating the last played if possible
+                last = last_played.get((schedule_name, cat))
                 for choice in shuffled:
-                    print(f"[INFO] choice: {choice}")
+                    if choice == last and len(shuffled) > 1:
+                        continue  # skip immediate repeat after reset
+
                     d = int(self.durations["by_path"].get(choice, 0))
-                    print(f"[INFO] d: {d}")
-                    if d <= 0:  # if the choice doesn't fit move onto the next iteration
-                        print(f"[WARN] choice did not fit!")
+                    if d <= 0:
                         continue
-                    if force or d <= secs_left:         # otherwise if it fits or force is true then
-                        print(f"[INFO] force: {force}, d: {d}, secs_left: {secs_left}")
-                        print(f"[INFO] assign candidate: {choice}")
-                        print(f"[INFO] assign category: {cat}")
-                        print(f"[INFO] assign dur: {d}")
+                    if force or d <= secs_left:
                         candidate, category, dur = choice, cat, d
-                        # mark immediately as queued if show/ad
                         if cat in ("shows", "ads"):
-                            print(f"[INFO] cat is in shows / ads")
-                            self.queue_tracker.mark_queued(choice, cat)
-                            print(f"[INFO] Returning true")
+                            self.queue_tracker.mark_queued(schedule_name, choice, cat)
+                        # remove picked file from in-memory pool
+                        files.remove(choice)
+                        # update last played
+                        last_played[(schedule_name, cat)] = choice
                         return True
-                print(f"[INFO] Returning false")
                 return False
 
-            # Try to pick something
-            if not pick(shows, "shows"):
-                if not pick(ads, "ads"):
-                    if not pick(bumpers, "bumpers", force=True):
-                        break  # nothing fits (very unlikely with bumpers)
+            # Try picking in order: shows → ads → bumpers
+            if not pick(pool["shows"], "shows"):
+                if not pick(pool["ads"], "ads"):
+                    if not pick(pool["bumpers"], "bumpers", force=True):
+                        break  # very unlikely with bumpers
 
             if candidate is None:
                 break
 
-            if secs_left <= 240:
-                print(f"[INFO] secs_left: {secs_left}")
+            # If we are about to play a show, randomly add a bumper before it based on config file value
+            if category == "shows" and pool["bumpers"]:
+                if random.random() < getattr(active, "bumper_chance", 0.5): # get from config file, default to 50%
+                    bumper_candidate, bumper_dur = None, 0
+
+                    def pick_bumper(files: list[str]):
+                        nonlocal bumper_candidate, bumper_dur
+                        if not files:
+                            return False
+                        shuffled = files[:]
+                        random.shuffle(shuffled)
+                        for choice in shuffled:
+                            d = int(self.durations["by_path"].get(choice, 0))
+                            if d <= 0:
+                                continue
+                            bumper_candidate, bumper_dur = choice, d
+                            return True
+                        return False
+
+                    if pick_bumper(pool["bumpers"]):
+                        # Append bumper first
+                        playlist.append((bumper_candidate, "bumpers"))
+                        secs_left -= bumper_dur
+                        current_time += timedelta(seconds=bumper_dur)
+                        print(f"[BUMPER] Inserted {bumper_candidate} ({bumper_dur}s) before show")
 
             playlist.append((candidate, category))
             secs_left -= dur
@@ -96,13 +135,13 @@ class QueuePlanner:
             # If we just added a show then add 2 ads immediately (if they fit)
             if category == "shows":
                 for _ in range(2):
-                    if pick(ads, "ads"):
-                        playlist.append((candidate, category))  # append the ad
-                        secs_left -= dur  # take duration from secs_left
-                        current_time += timedelta(seconds=dur)  # adjust current time
+                    if pick(pool["ads"], "ads"):
+                        playlist.append((candidate, category))
+                        secs_left -= dur
+                        current_time += timedelta(seconds=dur)
                     else:
-                        break  # no ad fits, move on # TODO change to continue instead?
-
+                        break
 
         return playlist
+
 

@@ -76,7 +76,7 @@ def main():
         return
 
     # Create VLC manager, add planned items with categories
-    manager = PlaylistManager(tracker)
+    manager = PlaylistManager(config, tracker)
     for file_path, category in plan:
         manager.add_to_playlist(file_path, category)
 

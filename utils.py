@@ -12,15 +12,15 @@ DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
 
 def seconds_until_restart(system) -> int:
-    """Return number of seconds until the next restart time."""
+    """Return number of seconds until the next scheduled action (restart/shutdown)."""
     now = datetime.now()
-    restart_time = now.replace(hour=system.restarthour, minute=system.restartminute, second=0, microsecond=0)
+    target_time = now.replace(hour=system.hour, minute=system.minute, second=0, microsecond=0)
 
-    # If restart time today has already passed, schedule it for tomorrow
-    if restart_time <= now:
-        restart_time += timedelta(days=1)
+    # If today's time has already passed, roll to tomorrow
+    if target_time <= now:
+        target_time += timedelta(days=1)
 
-    return int((restart_time - now).total_seconds())
+    return int((target_time - now).total_seconds())
 
 def restart_program():
     """Restart the current Python script in-place."""
@@ -40,16 +40,26 @@ def get_media_files(folder: str) -> list[str]:
         return []
 
 def wait_for_restart(system: System):
-    """Background loop to wait until restart time, then restart the script."""
+    """Background loop to wait until the scheduled time, then perform the action (restart/shutdown)."""
     while True:
         secs = seconds_until_restart(system)
-        print(f"[RESTART] Restart scheduled in {secs // 60} minutes ({secs} seconds).")
+        print(f"[SYSTEM] {system.action.capitalize()} scheduled in {secs // 60} minutes ({secs} seconds).")
         time.sleep(secs)
 
-        # Perform soft restart
-        print("[RESTART] Time reached. Restarting script now...")
-        python = sys.executable
-        os.execv(python, [python] + sys.argv)
+        if system.action == "restart":
+            # Soft restart of the script
+            print("[SYSTEM] Time reached. Restarting script now...")
+            python = sys.executable
+            os.execv(python, [python] + sys.argv)
+
+        elif system.action == "shutdown":
+            # Shutdown the Raspberry Pi
+            print("[SYSTEM] Time reached. Shutting down system now...")
+            subprocess.run(["sudo", "shutdown", "-h", "now"], check=False)
+
+        else:
+            print(f"[ERROR] Unknown system action '{system.action}'. Doing nothing.")
+            time.sleep(60)  # wait a minute before re-checking
 
 def start_restart_thread(system: System):
     """Start the restart timer thread."""
@@ -63,7 +73,7 @@ def start_restart_thread(system: System):
 def ensure_durations(config):
     """
     Ensure durations.json is up to date with all media in schedules.
-    If any media files are missing from durations.json, re-run durationanalyzer.py.
+    If any media files are missing from durations.json, re-run durationanalyzer.py
     """
     # Gather all media files from schedules
     all_files = []

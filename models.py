@@ -15,6 +15,7 @@ class Schedule:
     shows: List[str]
     ads: List[str]
     bumpers: List[str]
+    bumper_chance: float = 0.5  # default 50% chance
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Schedule":
@@ -30,6 +31,7 @@ class Schedule:
             shows=list(data["shows"]),
             ads=list(data["ads"]),
             bumpers=list(data["bumpers"]),
+            bumper_chance=data["bumper_chance"],
         )
 
     def is_active(self, hour: int, weekday: int, day: int, month: int) -> bool:
@@ -50,14 +52,18 @@ class Schedule:
 
 @dataclass
 class System:
-    restarthour: int
-    restartminute: int
+    action: str   # "restart" or "shutdown"
+    hour: int
+    minute: int
+    bumper_chance: float
 
     @staticmethod
     def from_dict(data: dict) -> "System":
         return System(
-            restarthour=data.get("restarthour", 2),
-            restartminute=data.get("restartminute", 0)
+            action=data.get("action", "restart"),  # default to restart if missing
+            hour=data.get("hour", 2),              # default 02:00 if missing
+            minute=data.get("minute", 0),           # default to 0 if missing
+            bumper_chance = float(data.get("bumper_chance", 0.5)) # default to 50% chance
         )
 
 # Class representing the config file
