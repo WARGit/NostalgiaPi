@@ -14,7 +14,7 @@ If you test on anything else and it works please let me know and i will add this
 
 # Pre-Requisites
 There will be some pre-reqs, e.g. packages to install i'm sure, what they are at the minute is not documented, once i get chance to build a pi from
-cratch i will update this readme with them
+scratch i will update this readme with them
 
 ## Config file example
 
