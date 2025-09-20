@@ -106,7 +106,7 @@ class QueuePlanner:
 
             # If we are about to play a show, randomly add a bumper before it based on config file value
             if category == "shows" and pool["bumpers"]:
-                if random.random() < self.system.bumper_chance:
+                if random.random() < getattr(active, "bumper_chance", 0.5): # get from config file, default to 50%
                     bumper_candidate, bumper_dur = None, 0
 
                     def pick_bumper(files: list[str]):

@@ -15,6 +15,7 @@ class Schedule:
     shows: List[str]
     ads: List[str]
     bumpers: List[str]
+    bumper_chance: float = 0.5  # default 50% chance
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Schedule":
@@ -30,6 +31,7 @@ class Schedule:
             shows=list(data["shows"]),
             ads=list(data["ads"]),
             bumpers=list(data["bumpers"]),
+            bumper_chance=data["bumper_chance"],
         )
 
     def is_active(self, hour: int, weekday: int, day: int, month: int) -> bool:
