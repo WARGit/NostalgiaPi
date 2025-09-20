@@ -199,4 +199,6 @@ Media is analysed on startup and durations are written to "durations.json", this
 
 There is currently no debugging built in, this will be added in future via a flag in the config file
 
-Please raise any issues you find or feedback, thank you!
+Any support would be greatly appreciated, my Kofi link is on the right hand side, thank you
+
+Please raise any issues you find or feedback to me for fixing, thank you!
