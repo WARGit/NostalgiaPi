@@ -5,6 +5,7 @@ import sys
 import threading
 import json
 import logging
+from logging import basicConfig
 
 from models import System
 from datetime import datetime, timedelta
@@ -105,7 +106,9 @@ def setup_logging(system):
     if not system.create_debug_file:
         return
 
-    # TODO Delete log file here if exists
+    # always delete debug log before we start
+    if os.path.exists("debug.log"):
+        os.remove("debug.log")
 
     log_level = logging.DEBUG
     handlers = [logging.StreamHandler()]  # allows us to always log to console
