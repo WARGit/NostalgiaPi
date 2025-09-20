@@ -199,4 +199,4 @@ Media is analysed on startup and durations are written to "durations.json", this
 
 There is currently no debugging built in, this will be added in future via a flag in the config file
 
-
+Please raise any issues you find or feedback, thank you!
