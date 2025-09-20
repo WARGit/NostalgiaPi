@@ -19,8 +19,8 @@ scratch i will update this readme with them
 ## Config file example
 
 There are 2 config files that can be created:
-config-nt.json - For use on Microsoft Windows
-config-pi.json - For use on Raspberry pi
+* config-nt.json - For use on Microsoft Windows
+* config-pi.json - For use on Raspberry pi
 
 This can run on Windows but it hasnt been tested outside of the basic logic, this is designed primarily to run on a pi due to its low power requirements.
 
