@@ -1,18 +1,12 @@
 # import Modules
-import cv2 # install package opencv-python
-import os  # For file and folder management
+import cv2      # install package opencv-python
+import os       # For file and folder management
 import json
-import random  # For random number generation
+import random   # For random number generation
 import math
+from models import *
 
-from numpy.matlib import empty
 ERROR_FILE = "duration_errors.json"
-
-if os.name != "nt":
-    import vlc  # import vlc module if not on win/nt
-from dataclasses import dataclass
-from typing import List, Dict
-from datetime import datetime
 
 # Class to handle calculating durations of files and writing to a json on disk.
 # As per chat=gpt, 1000 shows would take ~400KB in RAM, so very efficient
@@ -84,99 +78,6 @@ class DurationCache:
     def get_between(self, min_sec, max_sec):
         """Return all files with min_sec <= duration <= max_sec."""
         return [path for path, dur in self.by_path.items() if min_sec <= dur <= max_sec]
-
-# Class representing a schedule from the config file
-@dataclass
-class Schedule:
-    priority: int
-    daysofweek: List[int]   # 1–6 for Mon–Sun, 0 = Any
-    dates: List[int]        # 1–31, 0 = Any
-    months: List[int]       # 1–12, 0 = Any
-    starthour: int          # 0–23
-    endhour: int            # 0–23
-    shows: List[str]
-    ads: List[str]
-    bumpers: List[str]
-
-    @classmethod
-    def from_dict(cls, data: Dict) -> "Schedule":
-        """Factory to build a Schedule from JSON dict with proper type conversion."""
-        return cls(
-            priority    =int(data["priority"]),
-            daysofweek  =[int(x) for x in data["daysofweek"]],
-            dates       =[int(x) for x in data["dates"]],
-            months      =[int(x) for x in data["months"]],
-            starthour   =int(data["starthour"]),
-            endhour     =int(data["endhour"]),
-            shows       =list(data["shows"]),
-            ads         =list(data["ads"]),
-            bumpers     = list(data["bumpers"])
-        )
-
-    def is_active(self, hour: int, weekday: int, day: int, month: int) -> bool:
-        # --- Check hour range (supports wrap past midnight) ---
-        if self.starthour <= self.endhour:
-            in_hour = self.starthour <= hour < self.endhour
-        else:
-            in_hour = hour >= self.starthour or hour < self.endhour
-
-        # --- Check weekday ---
-        in_dayofweek = (0 in self.daysofweek) or (weekday in self.daysofweek)
-
-        # --- Check month ---
-        in_month = (0 in self.months) or (month in self.months)
-
-        # --- Check date ---
-        in_date = (0 in self.dates) or (day in self.dates)
-
-        return in_hour and in_dayofweek and in_month and in_date
-
-    def is_active_now(self) -> bool:
-        """Check if this schedule is active right now (system time)."""
-        now = datetime.now()
-        return self.is_active(
-            hour=now.hour,
-            weekday=(now.weekday() + 1),  # shift datetime from 0–6 to 1–7. 0 means any day
-            day=now.day,
-            month=now.month
-        )
-
-# Class representing the config file
-@dataclass
-class Config:
-    # attribute that holds a KVP of schedule objects with the schedule name being the str and schedule being a schedule object
-    schedules: Dict[str, Schedule]
-
-    def get_active_schedule(self) -> Schedule | None:
-        """Return the highest-priority active schedule, or None if none match."""
-        active = [s for s in self.schedules.values() if s.is_active_now()]
-        if not active:
-            return None
-        # priority 1 is highest, so sort ascending
-        return sorted(active, key=lambda s: s.priority)[0]
-
-    def get_active_media(self) -> tuple[list[str], list[str]]:
-        # Return (shows, ads) for the highest-priority active schedule(s).
-        # If multiple schedules share the top priority, merge their shows and ads
-        # without duplicates.
-
-        active = [s for s in self.schedules.values() if s.is_active_now()]
-        if not active:
-            return [], []
-
-        # Find the minimum (highest) priority among active
-        top_priority = min(s.priority for s in active)
-
-        # Collect unique shows/ads from all active schedules with that priority
-        shows: set[str] = set()
-        ads: set[str] = set()
-        for s in active:
-            if s.priority == top_priority:
-                shows.update(s.shows)
-                ads.update(s.ads)
-
-        # Return as lists (deterministic ordering optional, e.g. sorted)
-        return list(shows), list(ads)
 
 # Function to get all media files from the current folder
 def get_media_files(folder):
@@ -268,16 +169,15 @@ def main():
     if os.path.exists(CONFIG_FILE_NAME):
         print(f"{CONFIG_FILE_NAME} exists, proceed")
         with open(CONFIG_FILE_NAME, "r") as f:
-            cfgjson = json.load(f)
+            raw = json.load(f)
     else:
         print(f"{CONFIG_FILE_NAME} does not exist!")
         exit(1)
 
     # === Read schedules from rawjson so we know the media paths ===
-    schedules = {name: Schedule.from_dict(details) for name, details in cfgjson["schedules"].items()}
-    del cfgjson  # Free up RAM
-    config = Config(schedules=schedules)
-    del schedules # Free up RAM
+    schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
+    system = System.from_dict(raw["system"])
+    config = Config(schedules=schedules, system=system)
 
     # Setup empty array to hold all media
     all_media = []

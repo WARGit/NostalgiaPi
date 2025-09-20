@@ -1,7 +1,7 @@
 import os
 import vlc
 from tracker import PlayedTracker
-from models import Config   # ✅ import Config so we can type hint it
+from models import Config
 
 class PlaylistManager:
     """
