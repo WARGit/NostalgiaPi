@@ -192,12 +192,11 @@ The "action" property under system can be restart (which restarts the script) or
 
 The above json file will be included in the repo to use as a template.
 
-** Duration Analysis
-Media is analysed on startup and durations are written to "durations.json", this is used for lookups and building the playlist, if any media is unreadable then a "duration_errors.json" file will be generated that contains the files with issues, it is recommended to remove/replace these. 
+** Duration Analysis **
+Media is analysed on startup and durations are written to "durations.json", this is used for lookups and building the playlist, if any media is unreadable then a "duration_errors.json" file will be generated that contains the files with issues, it is recommended to remove/replace any files this identifies. 
 
-** Debugging
+** Debugging **
 
-There is currently no debugging built in, this will be added in future
-There is a file "duration_errors.json" that is generated if any files have errors, on first execution it is worth checking this file to ensure all media is useable.
+There is currently no debugging built in, this will be added in future via a flag in the config file
 
 
