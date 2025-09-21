@@ -33,38 +33,10 @@ def main():
     # spin off background thread that restarts script at specified time
     start_restart_thread(system)
 
-    # Loop through all schedules, get all paths and get all files from these paths to make "all_files"
-    all_files = []
-    for sched in schedules.values():
-        for group in (sched.shows + sched.ads + sched.bumpers):
-            files = get_media_files(group)  # expand the folder into its files
-            all_files.extend(files)
+    # Call method to ensure durations for all files have been calculated, if not they will be re-calculated
+    ensure_durations_have_been_calculated(schedules)
 
-    all_files = set(all_files)  # deduplicate files in the list by creating a new set object (schedules may have shared the same paths)
-
-    # Load durations.json (if it exists) and get all items by path
-    durationsjson = {}
-    if os.path.exists(DURATIONS_JSON):
-        with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-            durationsjson = json.load(f).get("by_path", {})
-    else:
-        data = {"by_path": {}, "by_duration": {}}
-        with open(DURATIONS_JSON, "w") as f:
-            json.dump(data, f, indent=2)
-
-    # Check if any files are missing from durations.json
-    missing = [f for f in all_files if f not in durationsjson]
-
-    # Evaluate and call duration analyzer script if json is missing any files on disk
-    if missing:
-        print(f"[INFO] {len(missing)} media files missing from {DURATIONS_JSON}, regenerating...")
-        subprocess.run(["python", DURATIONS_SCRIPT], check=True)
-    else:
-        print("[INFO] durations.json is up to date")
-
-    del all_files   # free up ram
-    del durationsjson  # free ram from above
-    # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure above
+    # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure in above method
     with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
         durationsjson = json.load(f)
 
