@@ -59,7 +59,7 @@ class QueuePlanner:
             for category in ("shows", "ads"):
                 if not pool[category]:      # if the list of "shows" or "ads" is empty
                     self.tracker.reset_if_exhausted(schedule_name, category)    # reset the json
-                    self.queue_tracker.reset_if_exhausted(schedule_name, category)  #reset the json
+                    #self.queue_tracker.reset_if_exhausted(schedule_name, category)  #reset the json
 
                     files = sum((get_media_files(p) for p in getattr(active, category)), []) # re-gather files from disk
                     pool[category] = files  # refill the pool
@@ -84,8 +84,9 @@ class QueuePlanner:
                         continue
                     if force or d <= secs_left:
                         candidate, category, dur = choice, cat, d
-                        if cat in ("shows", "ads"):
-                            self.queue_tracker.mark_queued(schedule_name, choice, cat)
+                        # NOTE: Removing queued items for now, new implementation will have time stamps for eventual display via web
+                        # if cat in ("shows", "ads"):
+                           # self.queue_tracker.mark_queued(schedule_name, choice, cat)
                         # remove picked file from in-memory pool
                         files.remove(choice)
                         # update last played
