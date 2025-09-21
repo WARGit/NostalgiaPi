@@ -5,7 +5,6 @@ import sys
 import threading
 import json
 import logging
-from logging import basicConfig
 
 from models import System
 from datetime import datetime, timedelta
@@ -16,30 +15,41 @@ DURATIONS_SCRIPT = "durationanalyzer.py"
 def seconds_until_restart(system) -> int:
     """Return number of seconds until the next scheduled action (restart/shutdown)."""
     now = datetime.now()
+    logging.debug(f"time now: {now}")
     target_time = now.replace(hour=system.hour, minute=system.minute, second=0, microsecond=0)
+    logging.debug(f"target_time: {target_time}")
 
     # If today's time has already passed, roll to tomorrow
     if target_time <= now:
+        logging.debug(f"target_time: {target_time} < now: {now}")
         target_time += timedelta(days=1)
 
+    logging.debug(f"returning: {int((target_time - now).total_seconds())}")
     return int((target_time - now).total_seconds())
 
 def restart_program():
     """Restart the current Python script in-place."""
-    print("[SYSTEM] Restarting program...")
+    print(f"Restarting script at {datetime.now()}...")
     python = sys.executable
     os.execl(python, python, *sys.argv)  # replaces the current process
 
 def get_media_files(folder: str) -> list[str]:
-    """Return full paths of video files in a folder (no recursion)."""
+    """Return full paths of video files in a folder (with recursion)."""
+    files: list[str] = []
     try:
-        return [
-            os.path.join(folder, f)
-            for f in os.listdir(folder)
-            if f.lower().endswith(('.mkv', '.mp4', '.avi'))
-        ]
+        logging.debug(f"Begin getting files from: {folder}")
+        for root, _, filenames in os.walk(folder):
+            logging.debug(f"root: {root}, filenames: {filenames}")
+            for f in filenames:
+                logging.debug(f"f: {f}")
+                if f.lower().endswith(('.mkv', '.mp4', '.avi')):
+                    logging.debug(f"appending: {os.path.join(root, f)}")
+                    files.append(os.path.join(root, f))
     except FileNotFoundError:
+        logging.error(f"File not found!: {os.path.join(folder, folder)}")
         return []
+    logging.debug(f"returning filecount: {len(files)}")
+    return files
 
 def wait_for_restart(system: System):
     """Background loop to wait until the scheduled time, then perform the action (restart/shutdown)."""
@@ -115,7 +125,7 @@ def setup_logging(system):
     handlers.append(logging.FileHandler("debug.log", mode="a"))
 
     logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=handlers
+        level = logging.DEBUG,
+        format = "%(asctime)s [%(levelname)s] %(funcName)s: %(message)s",
+        handlers = handlers
     )
