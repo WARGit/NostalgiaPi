@@ -38,12 +38,12 @@ def main():
 
     # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure in above method
     with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-        durationsjson = json.load(f)
+        durations_json = json.load(f)
 
     # construct objects
     tracker         = PlayedTracker() # Track played items
     queued_tracker  = QueuedTracker() # Track queued items
-    planner         = QueuePlanner(config, tracker, queued_tracker, durationsjson, system) # plans the queue of shows/ads/bumpers
+    planner         = QueuePlanner(config, tracker, queued_tracker, durations_json, system) # plans the queue of shows/ads/bumpers
 
     # build the playlist
     plan = planner.build_playlist_until_restart(datetime.now())
