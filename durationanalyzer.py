@@ -63,21 +63,6 @@ class DurationCache:
         # Save immediately so file always exists & stays up to date
         self.save()
 
-    def get_duration(self, path):
-        """Return duration (seconds) or None."""
-        return self.by_path.get(os.path.abspath(path))
-
-    def get_files_with_duration(self, duration):
-        """Return all files with an exact duration (as list of paths)."""
-        return self.by_duration.get(str(round(duration, 2)), [])
-
-    def get_under(self, seconds):
-        """Return all files with duration <= seconds."""
-        return [path for path, dur in self.by_path.items() if dur <= seconds]
-
-    def get_between(self, min_sec, max_sec):
-        """Return all files with min_sec <= duration <= max_sec."""
-        return [path for path, dur in self.by_path.items() if min_sec <= dur <= max_sec]
 
 # Function to get all media files from the current folder
 def get_media_files(folder):
@@ -88,13 +73,6 @@ def get_media_files(folder):
             if f.lower().endswith(video_exts):
                 media_files.append(os.path.join(root, f))
     return media_files
-# END DEF
-
-# Function to shuffle files and keep track of played ones
-def shuffle_files(media_files):
-    random.shuffle(media_files)  # Shuffle the media files list
-    return media_files
-# END DEF
 
 def log_duration_error(file_path, reason="unknown error"):
     errors = {}
@@ -109,20 +87,6 @@ def log_duration_error(file_path, reason="unknown error"):
 
     with open(ERROR_FILE, "w") as f:
         json.dump(errors, f, indent=2)
-
-def clear_duration_error(file_path):
-    """Remove file from error log if it exists."""
-    if not os.path.exists(ERROR_FILE):
-        return
-    with open(ERROR_FILE, "r") as f:
-        try:
-            errors = json.load(f)
-        except json.JSONDecodeError:
-            errors = {}
-    if file_path in errors:
-        del errors[file_path]
-        with open(ERROR_FILE, "w") as f:
-            json.dump(errors, f, indent=2)
 
 def get_duration_rounded(file_path):
     try:
