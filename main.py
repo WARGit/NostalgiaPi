@@ -1,3 +1,5 @@
+import logging
+
 from models import Schedule, Config, System
 from tracker import PlayedTracker, QueuedTracker
 from planner import QueuePlanner
@@ -5,7 +7,7 @@ from player import PlaylistManager
 from utils import *
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils import setup_logging
 
 DURATIONS_JSON = "durations.json"
@@ -28,7 +30,7 @@ def main():
     system = System.from_dict(raw["system"])
     config = Config(schedules=schedules, system=system)
     setup_logging(config.system)  # enable logging as per flag in system part of config
-    logging.info("Initialization complete")
+    logging.debug("Initialization complete")
 
     # spin off background thread that restarts script at specified time
     start_restart_thread(system)
