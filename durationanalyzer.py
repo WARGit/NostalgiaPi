@@ -1,10 +1,10 @@
-# import Modules
 import cv2      # install package opencv-python
 import os       # For file and folder management
 import json
-import random   # For random number generation
+import logging
 import math
 from models import *
+from utils import setup_logging
 
 ERROR_FILE = "duration_errors.json"
 
@@ -66,52 +66,67 @@ class DurationCache:
 
 # Function to get all media files from the current folder
 def get_media_files(folder):
+    logging.debug(f"Begin get media files for folder {folder}")
     video_exts = ('.mkv', '.mp4', '.avi')
     media_files = []
-    for root, _, files in os.walk(folder):
+    for root, _, files in os.walk(folder):  # os.walk gets a tuple - "root, dirs, files" '_' discards dirs
+        logging.debug(f"root {root}")
         for f in files:
+            logging.debug(f"file {f}")
             if f.lower().endswith(video_exts):
+                logging.debug(f"file {f}, matches {video_exts}, appending")
                 media_files.append(os.path.join(root, f))
+    logging.debug(f"Returning media files coun t{len(media_files)}")
     return media_files
 
 def log_duration_error(file_path, reason="unknown error"):
-    errors = {}
-    if os.path.exists(ERROR_FILE):
+
+    logging.debug("Begin log_duration_error")
+    # Create empty JSON if not exist or load exsiting from disk
+    if not os.path.exists(ERROR_FILE):
+        logging.debug(f"{ERROR_FILE} does not exist, we will create")
+        with open(ERROR_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f, indent=2)
+    else:
+        logging.debug(f"{ERROR_FILE} does exists, we will load")
         with open(ERROR_FILE, "r") as f:
             try:
                 errors = json.load(f)
             except json.JSONDecodeError:
                 errors = {}
 
-    errors[file_path] = reason
+    logging.debug(f"Create errors object with file_path {file_path} and reason: {reason}")
+    errors[file_path] = reason  # Create object to write to JSON
 
+    # Write error Json
+    logging.debug("writing object to file")
     with open(ERROR_FILE, "w") as f:
         json.dump(errors, f, indent=2)
 
 def get_duration_rounded(file_path):
     try:
-        print(f"begin duration calculation for {file_path}")
+        logging.debug(f"begin duration calculation for {file_path}")
         cap = cv2.VideoCapture(file_path)
 
         if not cap.isOpened():
-            print(f"file could not be opened!")
+            logging.debug(f"file could not be opened!")
             log_duration_error(file_path, "could not open file")
             return 0
 
-        print(f"file opened, get fps")
+        logging.debug(f"file opened, get fps")
         fps = cap.get(cv2.CAP_PROP_FPS)
 
-        print(f"get frame_count")
+        logging.debug(f"get frame_count")
         frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
-        print(f"get duration")
+        logging.debug(f"get duration")
         duration = frame_count / fps if fps else 0
 
-        print(f"release file handle")
+        logging.debug(f"release file handle")
         cap.release()
 
         rounded = math.ceil(duration)
-        print(f"returning duration '{rounded}'")
+        logging.debug(f"returning duration '{rounded}'")
         return rounded
 
     except Exception as e:
@@ -142,35 +157,39 @@ def main():
     schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
     system = System.from_dict(raw["system"])
     config = Config(schedules=schedules, system=system)
+    setup_logging(config.system)  # enable logging as per flag in system part of config
+    logging.debug("Initialization of DurationAnalyzer complete")
 
     # Setup empty array to hold all media
     all_media = []
 
     # loop through schedules and add all shows and ads to array above
     for s in config.schedules.values():
+        logging.debug("Adding shows, ads, bumpers for analysis")
         all_media.extend(s.shows)
         all_media.extend(s.ads)
         all_media.extend(s.bumpers)
 
+    logging.debug(f"remove dupes from '{len(all_media)}' paths")
     # now remove any duplicate paths from the array
     all_media = list(set(all_media))
-
-    # object to write to duration cache json
-    cache = DurationCache()
+    logging.debug(f"Dupes removed, '{len(all_media)}' paths remain")
+    cache = DurationCache()     # object to write to duration cache json
 
     # now loop through all paths and begin calculating duration
     for dir in all_media:
+        logging.debug(f"Analyzing '{dir}'")
         # get files in path
-        filesinpath = get_media_files(dir)
-        for f in filesinpath:
-            duration = ""  # empty variable
+        files_in_path = get_media_files(dir)
+        logging.debug(f"files_in_path count '{len(files_in_path)}'")
+        for f in files_in_path:
             # get duration of file
             duration = get_duration_rounded(os.path.join(dir, f))  # dir/file
-            print(f"file: {os.path.join(dir, f)} is {duration}")
+            logging.debug(f"file: {os.path.join(dir, f)} is {duration}")
             cache.add(os.path.join(dir, f), duration)
             cache.save()
 
-    print("file durations calculated successfully")
+    logging.debug("file durations calculated successfully")
 # END DEF
 
 if __name__ == "__main__":
