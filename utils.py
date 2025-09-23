@@ -84,8 +84,9 @@ def ensure_durations_have_been_calculated(schedules):
     If any media files are missing from durations.json, re-run durationanalyzer.py
     """
     ### temp - delete json, recalc and return -TODO fix this method
-    logging.debug(f"removing {DURATIONS_JSON}")
-    os.remove(DURATIONS_JSON)
+    logging.debug(f"removing {DURATIONS_JSON} if exists")
+    if os.path.exists(DURATIONS_JSON):
+        os.remove(DURATIONS_JSON)
     logging.debug(f"calling {DURATIONS_SCRIPT}")
     subprocess.run(["python", DURATIONS_SCRIPT], check=True)
     logging.debug(f"returning")

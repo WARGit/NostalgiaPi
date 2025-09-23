@@ -1,44 +1,46 @@
 import cv2      # install package opencv-python
 import os       # For file and folder management
 import json
-import logging
 import math
 from models import *
 from utils import setup_logging
 
-ERROR_FILE = "duration_errors.json"
-
 # Class to handle calculating durations of files and writing to a json on disk.
 # As per chat=gpt, 1000 shows would take ~400KB in RAM, so very efficient
 class DurationCache:
-    def __init__(self, cache_file="durations.json"):
-        self.cache_file = cache_file
+    def __init__(self):
+        logging.debug("Init DurationCache")
+        self.durations_file = "durations.json"
+        self.errors_file = "duration_errors.json"
         self.by_path = {}
         self.by_duration = {}
         self.load()
 
     def load(self):
-        if os.path.exists(self.cache_file):
-            with open(self.cache_file, "r") as f:
+        if os.path.exists(self.durations_file):
+            logging.debug(f"Loading {self.durations_file}")
+            with open(self.durations_file, "r") as f:
                 data = json.load(f)
                 self.by_path = data.get("by_path", {})
                 self.by_duration = data.get("by_duration", {})
         else:
-            # Create an empty cache file on first run
+            logging.debug(f"Creating new file {self.durations_file}")
             self.by_path = {}
             self.by_duration = {}
             self.save()
 
     def save(self):
+        logging.debug(f"Saving {self.durations_file}")
         data = {
             "by_path": self.by_path,
             "by_duration": self.by_duration
         }
-        with open(self.cache_file, "w") as f:
+        with open(self.durations_file, "w") as f:
             json.dump(data, f, indent=2)
 
     def add(self, path, duration):
         """Add or update a file duration."""
+        logging.debug(f"Adding/Updating {path}")
         path = os.path.abspath(path)
         duration_str = str(round(duration, 2))
 
@@ -79,17 +81,17 @@ def get_media_files(folder):
     logging.debug(f"Returning media files coun t{len(media_files)}")
     return media_files
 
-def log_duration_error(file_path, reason="unknown error"):
+def log_duration_error(file_path, reason="unknown error", errors_file="duration_errors.json"):
 
     logging.debug("Begin log_duration_error")
     # Create empty JSON if not exist or load exsiting from disk
-    if not os.path.exists(ERROR_FILE):
-        logging.debug(f"{ERROR_FILE} does not exist, we will create")
-        with open(ERROR_FILE, "w", encoding="utf-8") as f:
+    if not os.path.exists(errors_file):
+        logging.debug(f"{errors_file} does not exist, we will create")
+        with open(errors_file, "w", encoding="utf-8") as f:
             json.dump({}, f, indent=2)
     else:
-        logging.debug(f"{ERROR_FILE} does exists, we will load")
-        with open(ERROR_FILE, "r") as f:
+        logging.debug(f"{errors_file} does exists, we will load")
+        with open(errors_file, "r") as f:
             try:
                 errors = json.load(f)
             except json.JSONDecodeError:
@@ -100,17 +102,17 @@ def log_duration_error(file_path, reason="unknown error"):
 
     # Write error Json
     logging.debug("writing object to file")
-    with open(ERROR_FILE, "w") as f:
+    with open(errors_file, "w") as f:
         json.dump(errors, f, indent=2)
 
-def get_duration_rounded(file_path):
+def get_duration_rounded(file_path, errors_file):
     try:
         logging.debug(f"begin duration calculation for {file_path}")
         cap = cv2.VideoCapture(file_path)
 
         if not cap.isOpened():
             logging.debug(f"file could not be opened!")
-            log_duration_error(file_path, "could not open file")
+            log_duration_error(file_path, "could not open file", errors_file)
             return 0
 
         logging.debug(f"file opened, get fps")
@@ -130,7 +132,7 @@ def get_duration_rounded(file_path):
         return rounded
 
     except Exception as e:
-        log_duration_error(file_path, str(e))
+        log_duration_error(file_path, str(e), errors_file)
         return 0
 
 # ==========================================================
@@ -184,7 +186,7 @@ def main():
         logging.debug(f"files_in_path count '{len(files_in_path)}'")
         for f in files_in_path:
             # get duration of file
-            duration = get_duration_rounded(os.path.join(dir, f))  # dir/file
+            duration = get_duration_rounded(os.path.join(dir, f), cache.errors_file)  # dir/file
             logging.debug(f"file: {os.path.join(dir, f)} is {duration}")
             cache.add(os.path.join(dir, f), duration)
             cache.save()
