@@ -1,18 +1,12 @@
-# import Modules
-import cv2 # install package opencv-python
-import os  # For file and folder management
+import cv2      # install package opencv-python
+import os       # For file and folder management
 import json
-import random  # For random number generation
+import logging
 import math
+from models import *
+from utils import setup_logging
 
-from numpy.matlib import empty
 ERROR_FILE = "duration_errors.json"
-
-if os.name != "nt":
-    import vlc  # import vlc module if not on win/nt
-from dataclasses import dataclass
-from typing import List, Dict
-from datetime import datetime
 
 # Class to handle calculating durations of files and writing to a json on disk.
 # As per chat=gpt, 1000 shows would take ~400KB in RAM, so very efficient
@@ -69,184 +63,70 @@ class DurationCache:
         # Save immediately so file always exists & stays up to date
         self.save()
 
-    def get_duration(self, path):
-        """Return duration (seconds) or None."""
-        return self.by_path.get(os.path.abspath(path))
-
-    def get_files_with_duration(self, duration):
-        """Return all files with an exact duration (as list of paths)."""
-        return self.by_duration.get(str(round(duration, 2)), [])
-
-    def get_under(self, seconds):
-        """Return all files with duration <= seconds."""
-        return [path for path, dur in self.by_path.items() if dur <= seconds]
-
-    def get_between(self, min_sec, max_sec):
-        """Return all files with min_sec <= duration <= max_sec."""
-        return [path for path, dur in self.by_path.items() if min_sec <= dur <= max_sec]
-
-# Class representing a schedule from the config file
-@dataclass
-class Schedule:
-    priority: int
-    daysofweek: List[int]   # 1–6 for Mon–Sun, 0 = Any
-    dates: List[int]        # 1–31, 0 = Any
-    months: List[int]       # 1–12, 0 = Any
-    starthour: int          # 0–23
-    endhour: int            # 0–23
-    shows: List[str]
-    ads: List[str]
-    bumpers: List[str]
-
-    @classmethod
-    def from_dict(cls, data: Dict) -> "Schedule":
-        """Factory to build a Schedule from JSON dict with proper type conversion."""
-        return cls(
-            priority    =int(data["priority"]),
-            daysofweek  =[int(x) for x in data["daysofweek"]],
-            dates       =[int(x) for x in data["dates"]],
-            months      =[int(x) for x in data["months"]],
-            starthour   =int(data["starthour"]),
-            endhour     =int(data["endhour"]),
-            shows       =list(data["shows"]),
-            ads         =list(data["ads"]),
-            bumpers     = list(data["bumpers"])
-        )
-
-    def is_active(self, hour: int, weekday: int, day: int, month: int) -> bool:
-        # --- Check hour range (supports wrap past midnight) ---
-        if self.starthour <= self.endhour:
-            in_hour = self.starthour <= hour < self.endhour
-        else:
-            in_hour = hour >= self.starthour or hour < self.endhour
-
-        # --- Check weekday ---
-        in_dayofweek = (0 in self.daysofweek) or (weekday in self.daysofweek)
-
-        # --- Check month ---
-        in_month = (0 in self.months) or (month in self.months)
-
-        # --- Check date ---
-        in_date = (0 in self.dates) or (day in self.dates)
-
-        return in_hour and in_dayofweek and in_month and in_date
-
-    def is_active_now(self) -> bool:
-        """Check if this schedule is active right now (system time)."""
-        now = datetime.now()
-        return self.is_active(
-            hour=now.hour,
-            weekday=(now.weekday() + 1),  # shift datetime from 0–6 to 1–7. 0 means any day
-            day=now.day,
-            month=now.month
-        )
-
-# Class representing the config file
-@dataclass
-class Config:
-    # attribute that holds a KVP of schedule objects with the schedule name being the str and schedule being a schedule object
-    schedules: Dict[str, Schedule]
-
-    def get_active_schedule(self) -> Schedule | None:
-        """Return the highest-priority active schedule, or None if none match."""
-        active = [s for s in self.schedules.values() if s.is_active_now()]
-        if not active:
-            return None
-        # priority 1 is highest, so sort ascending
-        return sorted(active, key=lambda s: s.priority)[0]
-
-    def get_active_media(self) -> tuple[list[str], list[str]]:
-        # Return (shows, ads) for the highest-priority active schedule(s).
-        # If multiple schedules share the top priority, merge their shows and ads
-        # without duplicates.
-
-        active = [s for s in self.schedules.values() if s.is_active_now()]
-        if not active:
-            return [], []
-
-        # Find the minimum (highest) priority among active
-        top_priority = min(s.priority for s in active)
-
-        # Collect unique shows/ads from all active schedules with that priority
-        shows: set[str] = set()
-        ads: set[str] = set()
-        for s in active:
-            if s.priority == top_priority:
-                shows.update(s.shows)
-                ads.update(s.ads)
-
-        # Return as lists (deterministic ordering optional, e.g. sorted)
-        return list(shows), list(ads)
 
 # Function to get all media files from the current folder
 def get_media_files(folder):
+    logging.debug(f"Begin get media files for folder {folder}")
     video_exts = ('.mkv', '.mp4', '.avi')
     media_files = []
-    for root, _, files in os.walk(folder):
+    for root, _, files in os.walk(folder):  # os.walk gets a tuple - "root, dirs, files" '_' discards dirs
+        logging.debug(f"root {root}")
         for f in files:
+            logging.debug(f"file {f}")
             if f.lower().endswith(video_exts):
+                logging.debug(f"file {f}, matches {video_exts}, appending")
                 media_files.append(os.path.join(root, f))
+    logging.debug(f"Returning media files coun t{len(media_files)}")
     return media_files
-# END DEF
-
-# Function to shuffle files and keep track of played ones
-def shuffle_files(media_files):
-    random.shuffle(media_files)  # Shuffle the media files list
-    return media_files
-# END DEF
 
 def log_duration_error(file_path, reason="unknown error"):
-    errors = {}
-    if os.path.exists(ERROR_FILE):
+
+    logging.debug("Begin log_duration_error")
+    # Create empty JSON if not exist or load exsiting from disk
+    if not os.path.exists(ERROR_FILE):
+        logging.debug(f"{ERROR_FILE} does not exist, we will create")
+        with open(ERROR_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f, indent=2)
+    else:
+        logging.debug(f"{ERROR_FILE} does exists, we will load")
         with open(ERROR_FILE, "r") as f:
             try:
                 errors = json.load(f)
             except json.JSONDecodeError:
                 errors = {}
 
-    errors[file_path] = reason
+    logging.debug(f"Create errors object with file_path {file_path} and reason: {reason}")
+    errors[file_path] = reason  # Create object to write to JSON
 
+    # Write error Json
+    logging.debug("writing object to file")
     with open(ERROR_FILE, "w") as f:
         json.dump(errors, f, indent=2)
 
-def clear_duration_error(file_path):
-    """Remove file from error log if it exists."""
-    if not os.path.exists(ERROR_FILE):
-        return
-    with open(ERROR_FILE, "r") as f:
-        try:
-            errors = json.load(f)
-        except json.JSONDecodeError:
-            errors = {}
-    if file_path in errors:
-        del errors[file_path]
-        with open(ERROR_FILE, "w") as f:
-            json.dump(errors, f, indent=2)
-
 def get_duration_rounded(file_path):
     try:
-        print(f"begin duration calculation for {file_path}")
+        logging.debug(f"begin duration calculation for {file_path}")
         cap = cv2.VideoCapture(file_path)
 
         if not cap.isOpened():
-            print(f"file could not be opened!")
+            logging.debug(f"file could not be opened!")
             log_duration_error(file_path, "could not open file")
             return 0
 
-        print(f"file opened, get fps")
+        logging.debug(f"file opened, get fps")
         fps = cap.get(cv2.CAP_PROP_FPS)
 
-        print(f"get frame_count")
+        logging.debug(f"get frame_count")
         frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
-        print(f"get duration")
+        logging.debug(f"get duration")
         duration = frame_count / fps if fps else 0
 
-        print(f"release file handle")
+        logging.debug(f"release file handle")
         cap.release()
 
         rounded = math.ceil(duration)
-        print(f"returning duration '{rounded}'")
+        logging.debug(f"returning duration '{rounded}'")
         return rounded
 
     except Exception as e:
@@ -268,45 +148,48 @@ def main():
     if os.path.exists(CONFIG_FILE_NAME):
         print(f"{CONFIG_FILE_NAME} exists, proceed")
         with open(CONFIG_FILE_NAME, "r") as f:
-            cfgjson = json.load(f)
+            raw = json.load(f)
     else:
         print(f"{CONFIG_FILE_NAME} does not exist!")
         exit(1)
 
     # === Read schedules from rawjson so we know the media paths ===
-    schedules = {name: Schedule.from_dict(details) for name, details in cfgjson["schedules"].items()}
-    del cfgjson  # Free up RAM
-    config = Config(schedules=schedules)
-    del schedules # Free up RAM
+    schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
+    system = System.from_dict(raw["system"])
+    config = Config(schedules=schedules, system=system)
+    setup_logging(config.system)  # enable logging as per flag in system part of config
+    logging.debug("Initialization of DurationAnalyzer complete")
 
     # Setup empty array to hold all media
     all_media = []
 
     # loop through schedules and add all shows and ads to array above
     for s in config.schedules.values():
+        logging.debug("Adding shows, ads, bumpers for analysis")
         all_media.extend(s.shows)
         all_media.extend(s.ads)
         all_media.extend(s.bumpers)
 
+    logging.debug(f"remove dupes from '{len(all_media)}' paths")
     # now remove any duplicate paths from the array
     all_media = list(set(all_media))
-
-    # object to write to duration cache json
-    cache = DurationCache()
+    logging.debug(f"Dupes removed, '{len(all_media)}' paths remain")
+    cache = DurationCache()     # object to write to duration cache json
 
     # now loop through all paths and begin calculating duration
     for dir in all_media:
+        logging.debug(f"Analyzing '{dir}'")
         # get files in path
-        filesinpath = get_media_files(dir)
-        for f in filesinpath:
-            duration = ""  # empty variable
+        files_in_path = get_media_files(dir)
+        logging.debug(f"files_in_path count '{len(files_in_path)}'")
+        for f in files_in_path:
             # get duration of file
             duration = get_duration_rounded(os.path.join(dir, f))  # dir/file
-            print(f"file: {os.path.join(dir, f)} is {duration}")
+            logging.debug(f"file: {os.path.join(dir, f)} is {duration}")
             cache.add(os.path.join(dir, f), duration)
             cache.save()
 
-    print("file durations calculated successfully")
+    logging.debug("file durations calculated successfully")
 # END DEF
 
 if __name__ == "__main__":

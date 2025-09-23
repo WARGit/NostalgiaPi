@@ -1,3 +1,5 @@
+import logging
+
 from models import Schedule, Config, System
 from tracker import PlayedTracker, QueuedTracker
 from planner import QueuePlanner
@@ -5,7 +7,8 @@ from player import PlaylistManager
 from utils import *
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
+from utils import setup_logging
 
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
@@ -22,52 +25,27 @@ def main():
     with open(CONFIG_FILE_NAME, "r") as f:
         raw  = json.load(f)
 
-    # Build objects
+    # Build objects and setup logging
     schedules = {name: Schedule.from_dict(data) for name, data in raw["schedules"].items()}
     system = System.from_dict(raw["system"])
     config = Config(schedules=schedules, system=system)
+    setup_logging(config.system)  # enable logging as per flag in system part of config
+    logging.debug("Initialization complete")
+
     # spin off background thread that restarts script at specified time
     start_restart_thread(system)
 
-    # Loop through all schedules, get all paths and get all files from these paths to make "all_files"
-    all_files = []
-    for sched in schedules.values():
-        for group in (sched.shows + sched.ads + sched.bumpers):
-            files = get_media_files(group)  # expand the folder into its files
-            all_files.extend(files)
+    # Call method to ensure durations for all files have been calculated, if not they will be re-calculated
+    ensure_durations_have_been_calculated(schedules)
 
-    all_files = set(all_files)  # deduplicate files in the list by creating a new set object (schedules may have shared the same paths)
-
-    # Load durations.json (if it exists) and get all items by path
-    durationsjson = {}
-    if os.path.exists(DURATIONS_JSON):
-        with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-            durationsjson = json.load(f).get("by_path", {})
-    else:
-        data = {"by_path": {}, "by_duration": {}}
-        with open(DURATIONS_JSON, "w") as f:
-            json.dump(data, f, indent=2)
-
-    # Check if any files are missing from durations.json
-    missing = [f for f in all_files if f not in durationsjson]
-
-    # Evaluate and call duration analyzer script if json is missing any files on disk
-    if missing:
-        print(f"[INFO] {len(missing)} media files missing from {DURATIONS_JSON}, regenerating...")
-        subprocess.run(["python", DURATIONS_SCRIPT], check=True)
-    else:
-        print("[INFO] durations.json is up to date")
-
-    del all_files   # free up ram
-    del durationsjson  # free ram from above
-    # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure above
+    # Now onto the main work - read durations json but this time not just by_path, json will always exist, we made sure in above method
     with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
-        durationsjson = json.load(f)
+        durations_json = json.load(f)
 
     # construct objects
     tracker         = PlayedTracker() # Track played items
     queued_tracker  = QueuedTracker() # Track queued items
-    planner         = QueuePlanner(config, tracker, queued_tracker, durationsjson, system) # plans the queue of shows/ads/bumpers
+    planner         = QueuePlanner(config, tracker, queued_tracker, durations_json, system) # plans the queue of shows/ads/bumpers
 
     # build the playlist
     plan = planner.build_playlist_until_restart(datetime.now())
