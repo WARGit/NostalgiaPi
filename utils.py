@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
+DURATIONS_ERRORS = "duration_errors.json"
 
 def seconds_until_restart(system) -> int:
     """Return number of seconds until the next scheduled action (restart/shutdown)."""
@@ -77,20 +78,12 @@ def start_restart_thread(system: System):
     logging.debug("restart thread started")
     return t
 
-# Needs more work, ensure we are calc properly or just delete and re-create durations.json on each run?
 def ensure_durations_have_been_calculated(schedules):
     """
     Ensure durations.json is up to date with all media in schedules.
     If any media files are missing from durations.json, re-run durationanalyzer.py
+    NOTE: we only check the media against "by_path" in json, if we have the path we should have the duration too, this should be enough
     """
-    ### temp - delete json, recalc and return -TODO fix this method
-    logging.debug(f"removing {DURATIONS_JSON}")
-    os.remove(DURATIONS_JSON)
-    logging.debug(f"calling {DURATIONS_SCRIPT}")
-    subprocess.run(["python", DURATIONS_SCRIPT], check=True)
-    logging.debug(f"returning")
-    return
-    ### temp
 
     # Gather all media files from schedules
     all_files = []
@@ -99,17 +92,18 @@ def ensure_durations_have_been_calculated(schedules):
         logging.debug(f"schedule: {sched}")
         for group in (sched.shows + sched.ads + sched.bumpers):
             logging.debug(f"group: {group}")
-            all_files.extend(get_media_files(group))
+            all_files.extend(get_media_files(group))  # end up with a list of file names here
             logging.debug(f"all_files count: {len(all_files)}")
 
-    logging.debug("deduplicate all_files...")
-    #all_files = set(all_files)  # deduplicate
+    logging.debug("deduplicate all_files list")
+    all_files = set(all_files)  # deduplicate
     logging.debug(f"all_files count: {len(all_files)}")
 
     # Load durations.json (if it exists)
     durations = {}
     missing = []    # make empty list to store missing items
     if os.path.exists(DURATIONS_JSON):
+        logging.debug(f"loading durations from: {DURATIONS_JSON} and checking for missing files")
         with open(DURATIONS_JSON, "r", encoding="utf-8") as f:
             durations = json.load(f).get("by_path", {})
             # Check if any files are missing
@@ -117,9 +111,21 @@ def ensure_durations_have_been_calculated(schedules):
     else:
        missing.extend("missing") # add an item since json was missing to trigger re-calc
 
-    # if there are any missing items then re-calc
+    logging.debug(f"missing files length: {len(missing)}")
+
+    # if there are any missing items then re-calc all, first remove durations and duration_errors. json files
     if len(missing) > 0:
         logging.debug(f"Some files are missing durations, we will recalculate them")
+
+        logging.debug(f"removing {DURATIONS_JSON} if exists")
+        if os.path.exists(DURATIONS_JSON):
+           os.remove(DURATIONS_JSON)
+
+        logging.debug(f"removing {DURATIONS_ERRORS} if exists")
+        if os.path.exists(DURATIONS_ERRORS):
+           os.remove(DURATIONS_ERRORS)
+
+        logging.debug(f"calling {DURATIONS_SCRIPT}")
         subprocess.run(["python", DURATIONS_SCRIPT], check=True)
     else:
         logging.debug("Durations.json is up to date, nothing to do")
