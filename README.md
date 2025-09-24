@@ -192,8 +192,16 @@ The "action" property under system can be restart (which restarts the script) or
 
 The above json file will be included in the repo to use as a template.
 
+NOTE: 
+* When schedules overlap the highest priority will win
+* When 2 schedules overlap AND share the same priority the highest in the json will win
+* Recommended to make day-to-day schedules a very low priority e.g. Morning, Afternoon & Evening Priority 100, 101 and 102 respectively
+* Recommended to then make month/Date or Day of the week specific items a higher priority then these will win when expected and fallback to the morn/aft/evening almost as defaults
+
 ** Duration Analysis **
-Media is analysed on startup and durations are written to "durations.json", this is used for lookups and building the playlist, if any media is unreadable then a "duration_errors.json" file will be generated that contains the files with issues, it is recommended to remove/replace any files this identifies. 
+Media is analysed on startup and durations are written to "durations.json", this is used for lookups and building the playlist, 
+if any media is unreadable then a "duration_errors.json" file will be generated that contains the files with issues, 
+it is recommended to remove/replace any files this identifies. 
 
 ** Debugging **
 
