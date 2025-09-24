@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
+DURATIONS_ERRORS = "duration_errors.json"
 
 def seconds_until_restart(system) -> int:
     """Return number of seconds until the next scheduled action (restart/shutdown)."""
@@ -83,10 +84,15 @@ def ensure_durations_have_been_calculated(schedules):
     Ensure durations.json is up to date with all media in schedules.
     If any media files are missing from durations.json, re-run durationanalyzer.py
     """
-    ### temp - delete json, recalc and return -TODO fix this method
+    ### temp - delete jsons, recalc and return -TODO fix this method
     logging.debug(f"removing {DURATIONS_JSON} if exists")
     if os.path.exists(DURATIONS_JSON):
         os.remove(DURATIONS_JSON)
+
+    logging.debug(f"removing {DURATIONS_ERRORS} if exists")
+    if os.path.exists(DURATIONS_ERRORS):
+        os.remove(DURATIONS_ERRORS)
+
     logging.debug(f"calling {DURATIONS_SCRIPT}")
     subprocess.run(["python", DURATIONS_SCRIPT], check=True)
     logging.debug(f"returning")
