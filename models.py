@@ -100,5 +100,6 @@ class Config:
             logging.debug(f"No active schedule")
             return None
 
-        # priority 1 is highest
+        # Return the top entry from the list of schedules sorted by priority (1 is highest)
         return sorted(active, key=lambda s: s.priority)[0]
+
