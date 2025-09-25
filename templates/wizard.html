@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Config Wizard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .step { display: none; margin-bottom: 20px; }
+    .step.active { display: block; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Configuration Wizard</h1>
+  <p>Select what you want to configure:</p>
+
+  <button onclick="startSystem()">Edit System Settings</button>
+  <button onclick="startSchedule()">Create/Edit Schedule</button>
+
+  <div id="wizard"></div>
+
+  <script>
+    let stepIndex = 0;
+    let scheduleData = {};
+
+    function startSystem() {
+      document.getElementById("wizard").innerHTML = `
+        <h2>System Settings</h2>
+        <label>Action:
+          <select id="action">
+            <option value="restart">Restart</option>
+            <option value="shutdown">Shutdown</option>
+          </select>
+        </label><br>
+        <label>Hour: <input type="number" id="hour" min="0" max="23"></label><br>
+        <label>Minute: <input type="number" id="minute" min="0" max="59"></label><br>
+        <label>Create Debug File: <input type="checkbox" id="debug"></label><br>
+        <button onclick="saveSystem()">Save</button>
+      `;
+    }
+
+    function saveSystem() {
+      fetch("/config")
+        .then(r => r.json())
+        .then(cfg => {
+          cfg.system = {
+            action: document.getElementById("action").value,
+            hour: parseInt(document.getElementById("hour").value),
+            minute: parseInt(document.getElementById("minute").value),
+            CreateDebugFile: document.getElementById("debug").checked
+          };
+          return fetch("/save_config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cfg, null, 2)
+          });
+        })
+        .then(() => alert("System settings saved!"));
+    }
+
+    function startSchedule() {
+      stepIndex = 0;
+      scheduleData = {};
+      showStep();
+    }
+
+    function showStep() {
+      const wizard = document.getElementById("wizard");
+      const steps = [
+        `<h2>Step 1: Schedule Name</h2>
+         <input id="name" placeholder="e.g. morning">
+         <button onclick="nextStep()">Next</button>`,
+
+        `<h2>Step 2: Priority</h2>
+         <input id="priority" type="number" placeholder="1=highest">
+         <button onclick="nextStep()">Next</button>`,
+
+        `<h2>Step 3: Active Time</h2>
+         Start Hour <input id="starthour" type="number" min="0" max="23"><br>
+         Start Minute <input id="startminute" type="number" min="0" max="59"><br>
+         End Hour <input id="endhour" type="number" min="0" max="23"><br>
+         End Minute <input id="endminute" type="number" min="0" max="59"><br>
+         <button onclick="nextStep()">Next</button>`,
+
+        `<h2>Step 4: Days / Months</h2>
+         Days of Week (0=any, 1=Mon...7=Sun) <input id="days" placeholder="e.g. 0 or 1,2,3"><br>
+         Months (0=any, 1=Jan...12=Dec) <input id="months" placeholder="e.g. 0 or 5,6"><br>
+         Dates (0=any, 1-31) <input id="dates" placeholder="e.g. 0 or 1,15"><br>
+         <button onclick="nextStep()">Next</button>`,
+
+        `<h2>Step 5: Media Paths</h2>
+         Shows folders (comma separated) <input id="shows" placeholder="c:\\Videos\\shows"><br>
+         Ads folders (comma separated) <input id="ads" placeholder="c:\\Videos\\ads"><br>
+         Bumpers folders (comma separated) <input id="bumpers" placeholder="c:\\Videos\\bumpers"><br>
+         <button onclick="nextStep()">Next</button>`,
+
+        `<h2>Step 6: Bumper Chance</h2>
+         <input id="bumper_chance" type="number" step="0.1" min="0" max="1" value="0.5"><br>
+         <button onclick="finishSchedule()">Finish</button>`
+      ];
+      wizard.innerHTML = steps[stepIndex];
+    }
+
+    function nextStep() {
+      if (stepIndex === 0) scheduleData.name = document.getElementById("name").value;
+      if (stepIndex === 1) scheduleData.priority = parseInt(document.getElementById("priority").value);
+      if (stepIndex === 2) {
+        scheduleData.starthour = parseInt(document.getElementById("starthour").value);
+        scheduleData.startminute = parseInt(document.getElementById("startminute").value);
+        scheduleData.endhour = parseInt(document.getElementById("endhour").value);
+        scheduleData.endminute = parseInt(document.getElementById("endminute").value);
+      }
+      if (stepIndex === 3) {
+        scheduleData.daysofweek = document.getElementById("days").value.split(",").map(Number);
+        scheduleData.months = document.getElementById("months").value.split(",").map(Number);
+        scheduleData.dates = document.getElementById("dates").value.split(",").map(Number);
+      }
+      if (stepIndex === 4) {
+        scheduleData.shows = document.getElementById("shows").value.split(",");
+        scheduleData.ads = document.getElementById("ads").value.split(",");
+        scheduleData.bumpers = document.getElementById("bumpers").value.split(",");
+      }
+      if (stepIndex === 5) {
+        scheduleData.bumper_chance = parseFloat(document.getElementById("bumper_chance").value);
+      }
+      stepIndex++;
+      showStep();
+    }
+
+    function finishSchedule() {
+      nextStep();
+      fetch("/config")
+        .then(r => r.json())
+        .then(cfg => {
+          cfg.schedules[scheduleData.name] = scheduleData;
+          return fetch("/save_config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cfg, null, 2)
+          });
+        })
+        .then(() => alert("Schedule saved!"));
+    }
+  </script>
+</body>
+</html>

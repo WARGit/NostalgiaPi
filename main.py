@@ -1,22 +1,20 @@
 import logging
-
 from models import Schedule, Config, System
 from tracker import PlayedTracker, QueuedTracker
 from planner import QueuePlanner
 from player import PlaylistManager
 from utils import *
-import os
-import json
 from datetime import datetime
 from utils import setup_logging
+from webui import *
 
 DURATIONS_JSON = "durations.json"
 DURATIONS_SCRIPT = "durationanalyzer.py"
 
-def main():
+# Pick the config file by OS
+CONFIG_FILE_NAME = "config_pi.json" if os.name != "nt" else "config_nt.json"
 
-    # Pick the config file by OS
-    CONFIG_FILE_NAME = "config_pi.json" if os.name != "nt" else "config_nt.json"
+def main():
 
     # Load config
     if not os.path.exists(CONFIG_FILE_NAME):
@@ -34,6 +32,11 @@ def main():
 
     # spin off background thread that restarts script at specified time
     start_restart_thread(system)
+
+    # Start Flask in a background thread
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
 
     # Call method to ensure durations for all files have been calculated, if not they will be re-calculated
     ensure_durations_have_been_calculated(schedules)
@@ -70,7 +73,6 @@ def main():
     except KeyboardInterrupt:
         manager.stop_playback()
         manager.set_fullscreen(False)
-
 
 if __name__ == "__main__":
     main()

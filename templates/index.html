@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nostaligia Pi Management</title>
+  <!-- Link to external CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Media Player Management</h1>
+  </header>
+
+  <div class="container">
+    <a class="button" href="/wizard">Configure System / Schedules</a>
+    <a class="button" href="/view_schedule.html">View Schedule</a>
+  </div>
+
+  <!-- Link to external JS -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
