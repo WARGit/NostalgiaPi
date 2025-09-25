@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}Media Player Management{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="toggleSidebar()">&times;</a>
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('wizard') }}">Configure System / Schedules</a>
+    <a href="/view_schedule.html">View Schedule</a>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <span class="hamburger" onclick="toggleSidebar()">&#9776;</span>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>
