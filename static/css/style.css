@@ -67,3 +67,12 @@ body {
     width: 512px;
     margin-bottom: 10px;
 }
+
+/* Text under Logo */
+.home-title {
+  color: #F1B61C;
+}
+
+.now-playing {
+  color: #F1B61C;
+}
