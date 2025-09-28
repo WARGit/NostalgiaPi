@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from models import Config, System
 from tracker import PlayedTracker, QueuedTracker
 from utils import get_media_files, seconds_until_restart
+import pathlib
 
 class QueuePlanner:
     """
@@ -101,7 +102,7 @@ class QueuePlanner:
                         logging.debug(f"Last played: {last} matches choice {choice}, skipping")
                         continue  # skip immediate repeat after reset
 
-                    logging.debug(f"Gte duration of choice {choice}")
+                    logging.debug(f"Get duration of choice {choice}")
                     d = int(self.durations["by_path"].get(choice, 0))
                     logging.debug(f"Duration is: {d}")
                     if d <= 0:
@@ -111,13 +112,12 @@ class QueuePlanner:
                     if force or d <= secs_left:
                         candidate, category, dur = choice, cat, d
                         if cat in ("shows", "ads"):
-                           self.queue_tracker.mark_queued(choice, cat, current_time)
-                        # remove picked file from in-memory pool
-                        logging.debug(f"Removing choice {choice} from files pool and returning true")
-                        files.remove(choice)
-                        # update last played
-                        last_played[(schedule_name, cat)] = choice
-                        return True
+                            # remove picked file from in-memory pool
+                            logging.debug(f"Removing choice {choice} from files pool and returning true")
+                            files.remove(choice)
+                            # update last played
+                            last_played[(schedule_name, cat)] = choice
+                            return True
                 logging.debug("returning false")
                 return False
 
@@ -165,7 +165,8 @@ class QueuePlanner:
                     logging.debug(f"No bumper will be added")
 
             logging.debug(f"Added {candidate} candidate to playlist")
-            self.queue_tracker.mark_queued(candidate, category, current_time)
+
+            self.queue_tracker.mark_queued(pathlib.Path(candidate).stem, category, current_time)
             playlist.append((candidate, category))
             secs_left -= dur
             logging.debug(f"secs_left: {secs_left}")
@@ -178,7 +179,7 @@ class QueuePlanner:
                     logging.debug(f"Adding 2 ads before next show")
                     if pick(pool["ads"], "ads"):
                         logging.debug(f"Appending ad to playlist {candidate}")
-                        playlist.append((candidate, category))
+                        playlist.append((pathlib.Path(candidate).stem, category))
                         logging.debug(f"secs_left: {secs_left}")
                         secs_left -= dur
                         logging.debug(f"current_time: {current_time}")

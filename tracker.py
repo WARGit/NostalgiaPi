@@ -93,11 +93,11 @@ class QueuedTracker:
             return
 
         entry = {
-            "category": category,
             "filepath": filepath,
-            "time": scheduled_time.isoformat()
+            "day": scheduled_time.day,  ## day needs to be translated to Mon/Tues/Weds - TODO
+            "time": f"{scheduled_time.hour}:{scheduled_time.minute}",
         }
 
-        logging.debug(f"Queueing {filepath} at {entry['time']} in category {category}")
+        logging.debug(f"Queueing {filepath} at {entry['time']} for category {category}")
         self.data.append(entry)
         self.save()
