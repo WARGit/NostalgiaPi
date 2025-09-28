@@ -69,12 +69,11 @@ class QueuePlanner:
 
             pool = schedule_pools[schedule_name]
 
-            # Reset per-schedule played/queued if pools exhausted
+            # Reset per-schedule played if pools exhausted
             for category in ("shows", "ads"):
                 if not pool[category]:      # if the list of "shows" or "ads" is empty
                     logging.debug(f"Pool {pool[category]} is exhausted")
                     self.tracker.reset_if_exhausted(schedule_name, category)    # reset the json
-                    #self.queue_tracker.reset_if_exhausted(schedule_name, category)  #reset the json
                     files = sum((get_media_files(p) for p in getattr(active, category)), []) # re-gather files from disk
                     logging.debug(f"Refill pool from files on disk")
                     pool[category] = files  # refill the pool
@@ -111,9 +110,8 @@ class QueuePlanner:
                     logging.debug(f"Force: {force}")
                     if force or d <= secs_left:
                         candidate, category, dur = choice, cat, d
-                        # NOTE: Removing queued items for now, new implementation will have time stamps for eventual display via web
-                        # if cat in ("shows", "ads"):
-                           # self.queue_tracker.mark_queued(schedule_name, choice, cat)
+                        if cat in ("shows", "ads"):
+                           self.queue_tracker.mark_queued(choice, cat, current_time)
                         # remove picked file from in-memory pool
                         logging.debug(f"Removing choice {choice} from files pool and returning true")
                         files.remove(choice)
@@ -167,6 +165,7 @@ class QueuePlanner:
                     logging.debug(f"No bumper will be added")
 
             logging.debug(f"Added {candidate} candidate to playlist")
+            self.queue_tracker.mark_queued(candidate, category, current_time)
             playlist.append((candidate, category))
             secs_left -= dur
             logging.debug(f"secs_left: {secs_left}")

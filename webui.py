@@ -24,6 +24,10 @@ def home():
 def wizard():
     return render_template("wizard.html")
 
+@app.route("/view_schedule")
+def view_schedule():
+    return render_template("view_schedule.html")
+
 @app.route("/config", methods=["GET"])
 def get_config():
     cfg = load_config()
@@ -35,6 +39,12 @@ def update_config():
     save_config(new_cfg)
     return jsonify({"status": "ok"})
 
+@app.route("/queued", methods=["GET"])
+def get_queued():
+    if not os.path.exists("queued.json"):
+        return jsonify([])
+    with open("queued.json", "r") as f:
+        return jsonify(json.load(f))
+
 def run_flask():
-    # Threaded=True lets Flask handle multiple requests at once
-    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=8000, debug=False, threaded=True)
