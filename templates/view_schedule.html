@@ -1,77 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>View Schedule</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script>
-    async function loadSchedule() {
-      try {
-        const response = await fetch("/queued");
-        if (!response.ok) throw new Error("Failed to fetch queued items");
+{% extends "base.html" %}
 
-        const data = await response.json();
-        const tableBody = document.getElementById("schedule-body");
-        tableBody.innerHTML = "";
+{% block title %}TV Guide{% endblock %}
 
-        if (data.length === 0) {
-          tableBody.innerHTML = "<tr><td colspan='3'>No queued items</td></tr>";
-          return;
-        }
+{% block content %}
+  <h1>TV Guide Schedule</h1>
 
-        data.forEach(item => {
-          const row = document.createElement("tr");
+  {% if entries %}
+  <div class="tv-guide">
+    <div class="grid">
+      {# Sort by time (simple lexicographic HH:MM works if times are zero-padded) #}
+      {% for entry in entries | sort(attribute='time') %}
+        <div class="program {{ entry.category|default('') }}">
+          <div class="time">{{ entry.day }} {{ entry.time }}</div>
 
-          const timeCell = document.createElement("td");
-          timeCell.textContent = new Date(item.time).toLocaleString();
-          row.appendChild(timeCell);
+          {# Use entry.image if present, otherwise fall back to a default image #}
+          <img
+            src="{{ url_for('static', filename=entry.image) if entry.image is defined and entry.image else url_for('static', filename='img/tvguide/default.jpg') }}"
+            alt="preview"
+            class="thumbnail"
+          >
 
-          const fileCell = document.createElement("td");
-          fileCell.textContent = item.filepath;
-          row.appendChild(fileCell);
-
-          tableBody.appendChild(row);
-        });
-      } catch (err) {
-        console.error(err);
-        document.getElementById("schedule-body").innerHTML =
-          "<tr><td colspan='3'>Error loading schedule</td></tr>";
-      }
-    }
-
-    window.onload = loadSchedule;
-  </script>
-  <style>
-    table {
-      width: 90%;
-      margin: 20px auto;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-    th {
-      background: #B51744;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background: #f9f9f9;
-    }
-  </style>
-</head>
-<body>
-  <h1>Queued Schedule</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Time</th>
-        <th>File</th>
-      </tr>
-    </thead>
-    <tbody id="schedule-body">
-      <tr><td colspan="2">Loading...</td></tr>
-    </tbody>
-  </table>
-</body>
-</html>
+          <div class="title">{{ entry.filepath }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+    <p>No queued items found.</p>
+  {% endif %}
+{% endblock %}

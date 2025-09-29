@@ -76,3 +76,76 @@ body {
 .now-playing {
   color: #F1B61C;
 }
+
+/* TV Guide / TV Schedule Page OLD */
+.tv-guide {
+  display: grid;
+  grid-template-areas:
+    "timeline timeline"
+    "channels grid";
+  grid-template-columns: 200px 1fr;
+  grid-gap: 10px;
+  margin: 20px;
+}
+
+.timeline {
+  grid-area: timeline;
+  display: flex;
+  justify-content: space-around;
+  font-weight: bold;
+  padding: 10px;
+  background: #222;
+  color: #fff;
+}
+
+.time-slot {
+  flex: 1;
+  text-align: center;
+}
+
+.channels {
+  grid-area: channels;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.channel {
+  padding: 10px;
+  font-weight: bold;
+  background: #B51744;
+  color: white;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.program {
+  border: 1px solid #ccc;
+  padding: 10px;
+  background: #fff;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.program img {
+  width: 100%;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+.program.shows {
+  border-left: 5px solid #007BFF;
+}
+
+.program.ads {
+  border-left: 5px solid #28A745;
+}
+
