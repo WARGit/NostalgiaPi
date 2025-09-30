@@ -1,31 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}TV Guide{% endblock %}
-
 {% block content %}
-  <h1>TV Guide Schedule</h1>
-
-  {% if entries %}
-  <div class="tv-guide">
-    <div class="grid">
-      {# Sort by time (simple lexicographic HH:MM works if times are zero-padded) #}
-      {% for entry in entries | sort(attribute='time') %}
-        <div class="program {{ entry.category|default('') }}">
-          <div class="time">{{ entry.day }} {{ entry.time }}</div>
-
-          {# Use entry.image if present, otherwise fall back to a default image #}
-          <img
-            src="{{ url_for('static', filename=entry.image) if entry.image is defined and entry.image else url_for('static', filename='img/tvguide/default.jpg') }}"
-            alt="preview"
-            class="thumbnail"
-          >
-
-          <div class="title">{{ entry.filepath }}</div>
-        </div>
-      {% endfor %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ schedule_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="layout">
+    <!-- Banner on the left -->
+    <div class="banner">
+      {% if banner %}
+        <img src="{{ url_for('static', filename='img/banners/' ~ banner) }}"
+             alt="Banner">
+      {% else %}
+        <p>No banner available</p>
+      {% endif %}
+    </div>
+    <!-- Schedule grid on the right -->
+    <div class="schedule">
+      <h1>{{ schedule_name }}</h1>
+      <div class="grid">
+        {% for e in entries %}
+          <div class="entry">
+            {% if e.icon %}
+              <img src="{{ url_for('static', filename=e.icon) }}" class="icon" alt="icon">
+            {% endif %}
+            <span class="time">{{ e.time_formatted }}</span>
+            <div class="title">{{ e.filepath }}</div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
-  {% else %}
-    <p>No queued items found.</p>
-  {% endif %}
+
+  <!-- Sprinkle random floating images -->
+  {% for img in random_images %}
+    <img src="{{ url_for('static', filename='img/tvguide/' ~ img) }}"
+         class="floating-img"
+         style="top: {{ (loop.index * 150) + 50 }}px; left: {{ 250 + (loop.index * 200) }}px;"
+         alt="extra">
+  {% endfor %}
+</body>
+</html>
 {% endblock %}

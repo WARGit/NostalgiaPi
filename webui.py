@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, jsonify, request, render_template
 import json
 import os
@@ -27,22 +29,50 @@ def wizard():
 
 @app.route("/view_schedule")
 def view_schedule():
-    # Load your queued.json
-    import json
+    # Load queued.json
     with open("queued.json", "r") as f:
-        entries = json.load(f)
+        data = json.load(f)
+    entries = data  # no filtering, all entries are shows
 
-    # Get list of images from static/img/tvguide
-    img_folder = os.path.join(app.static_folder, "img", "tvguide")
-    images = [f"img/tvguide/{f}" for f in os.listdir(img_folder)
-              if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))]
+    for e in entries:
+        t = datetime.strptime(e["time"], "%H:%M")
+        e["time_formatted"] = t.strftime("%I:%M %p").lstrip("0")  # e.g. 6:00 AM
 
-    # Assign a random image to each entry
-    for entry in entries:
-        entry["image"] = random.choice(images)
+        # random icon or none
+        if random.choice([True, False]):
+            e["icon"] = f"img/icons/{random.choice(['new.png', 'rerun.png'])}"
+        else:
+            e["icon"] = None
 
-    return render_template("view_schedule.html", entries=entries)
+        # tie banner to month
+    month_name = datetime.now().strftime("%B").lower()  # e.g. 'september'
+    banner_dir = os.path.join(app.static_folder, "img", "banners")
 
+    banner = None
+    if os.path.exists(banner_dir):
+        for ext in ("png", "jpg", "jpeg", "gif"):
+            candidate = f"{month_name}.{ext}"
+            if candidate in os.listdir(banner_dir):
+                banner = candidate
+                break
+
+    # fallback: pick a random banner if no month-specific one found
+    if banner is None:
+        banners = os.listdir(banner_dir) if os.path.exists(banner_dir) else []
+        banner = random.choice(banners) if banners else None
+
+    # floating images
+    img_dir = os.path.join(app.static_folder, "img", "tvguide")
+    img_files = os.listdir(img_dir) if os.path.exists(img_dir) else []
+    random_images = random.sample(img_files, min(3, len(img_files)))
+
+    return render_template(
+        "view_schedule.html",
+        entries=entries,
+        random_images=random_images,
+        banner=banner,
+        schedule_name="Tonight's Schedule"  # replace with JSON-driven schedule name later
+    )
 
 @app.route("/config", methods=["GET"])
 def get_config():
@@ -65,4 +95,4 @@ def get_queued():
     return jsonify(data)
 
 def run_flask():
-    app.run(host="0.0.0.0", port=8000, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
