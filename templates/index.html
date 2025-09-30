@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Media Player Management{% endblock %}
+
+{% block content %}
+  <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
+  <h1 class="home-title">Welcome to NostalgiaPi!</h1>
+  <h2 class="now-playing">now playing</h2>
+{% endblock %}

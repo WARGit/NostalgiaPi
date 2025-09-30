@@ -1,0 +1,134 @@
+/* Reset basics */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000000;
+}
+
+/* Sidebar */
+.sidebar {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 100;
+    top: 0;
+    left: 0;
+    background-color: #B51744;
+    overflow-x: hidden;
+    transition: 0.3s;
+    padding-top: 60px;
+}
+
+.sidebar a {
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 18px;
+    color: yellow;
+    display: block;
+    transition: 0.2s;
+}
+
+.sidebar a:hover {
+    background-color: #0056b3;
+}
+
+.sidebar .closebtn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 30px;
+    color: white;
+}
+
+/* Main area */
+.main {
+    margin-left: 0;
+    transition: margin-left .3s;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Hamburger icon */
+.hamburger {
+    font-size: 30px;
+    cursor: pointer;
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    color: #B51744;
+}
+
+/* Center content */
+.content {
+    margin-top: 100px;
+}
+
+.logo {
+    width: 512px;
+    margin-bottom: 10px;
+}
+
+/* Text under Logo */
+.home-title {
+  color: #F1B61C;
+}
+
+.now-playing {
+  color: #F1B61C;
+}
+
+/* TV Guide / TV Schedule Page OLD */
+    .layout {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 20px;
+      min-height: 100vh;
+    }
+    .banner {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .banner img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+    .schedule {
+      display: flex;
+      flex-direction: column;
+    }
+    .schedule h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 wide for mobile friendliness */
+      gap: 15px;
+    }
+    .entry {
+      background: #f8f8f8;
+      border: 1px solid #ccc;
+      padding: 10px;
+      position: relative;
+    }
+    .entry .time {
+      font-weight: bold;
+      display: block;
+    }
+    .entry img.icon {
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      top: 5px;
+      left: 5px;
+    }
+    /* floating random images */
+    .floating-img {
+      position: absolute;
+      z-index: 2;
+      opacity: 0.9;
+      max-width: 120px;
+    }

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration Wizard{% endblock %}
+
+{% block content %}
+  <h1>Configuration Wizard</h1>
+  <p>Fill in the fields below to create or edit schedules.</p>
+
+  <form id="wizardForm">
+    <label>Schedule Name:</label><br>
+    <input type="text" name="name" required><br><br>
+
+    <label>Start Hour:</label><br>
+    <input type="number" name="starthour" min="0" max="23" required><br><br>
+
+    <label>End Hour:</label><br>
+    <input type="number" name="endhour" min="0" max="23" required><br><br>
+
+    <button type="submit">Save Schedule</button>
+  </form>
+
+  <p id="result"></p>
+
+  <script>
+    document.getElementById("wizardForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      const response = await fetch("/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      document.getElementById("result").textContent = "Saved: " + JSON.stringify(result);
+    });
+  </script>
+{% endblock %}
