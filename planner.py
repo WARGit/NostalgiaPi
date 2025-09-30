@@ -179,7 +179,7 @@ class QueuePlanner:
                     logging.debug(f"Adding 2 ads before next show")
                     if pick(pool["ads"], "ads"):
                         logging.debug(f"Appending ad to playlist {candidate}")
-                        playlist.append((pathlib.Path(candidate).stem, category))
+                        playlist.append(((candidate), category))
                         logging.debug(f"secs_left: {secs_left}")
                         secs_left -= dur
                         logging.debug(f"current_time: {current_time}")
