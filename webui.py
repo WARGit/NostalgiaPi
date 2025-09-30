@@ -7,6 +7,7 @@ import random
 
 CONFIG_FILE_NAME = "config_pi.json" if os.name != "nt" else "config_nt.json"
 
+
 app = Flask(__name__, static_folder="static")
 
 def load_config():
@@ -95,4 +96,7 @@ def get_queued():
     return jsonify(data)
 
 def run_flask():
-    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+
+    with open(CONFIG_FILE_NAME, "r") as f:
+        cfg = json.load(f)
+    app.run(host="0.0.0.0", port=cfg["system"]["webuiport"], debug=False, threaded=True)
