@@ -1,12 +1,11 @@
 from datetime import datetime
-
+import requests
 from flask import Flask, jsonify, request, render_template
 import json
 import os
 import random
 
 CONFIG_FILE_NAME = "config_pi.json" if os.name != "nt" else "config_nt.json"
-
 
 app = Flask(__name__, static_folder="static")
 
@@ -30,50 +29,18 @@ def wizard():
 
 @app.route("/view_schedule")
 def view_schedule():
-    # Load queued.json
     with open("queued.json", "r") as f:
         data = json.load(f)
-    entries = data  # no filtering, all entries are shows
-
-    for e in entries:
-        t = datetime.strptime(e["time"], "%H:%M")
-        e["time_formatted"] = t.strftime("%I:%M %p").lstrip("0")  # e.g. 6:00 AM
-
-        # random icon or none
-        if random.choice([True, False]):
-            e["icon"] = f"img/icons/{random.choice(['new.png', 'rerun.png'])}"
-        else:
-            e["icon"] = None
-
-        # tie banner to month
-    month_name = datetime.now().strftime("%B").lower()  # e.g. 'september'
-    banner_dir = os.path.join(app.static_folder, "img", "banners")
-
-    banner = None
-    if os.path.exists(banner_dir):
-        for ext in ("png", "jpg", "jpeg", "gif"):
-            candidate = f"{month_name}.{ext}"
-            if candidate in os.listdir(banner_dir):
-                banner = candidate
-                break
-
-    # fallback: pick a random banner if no month-specific one found
-    if banner is None:
-        banners = os.listdir(banner_dir) if os.path.exists(banner_dir) else []
-        banner = random.choice(banners) if banners else None
-
-    # floating images
-    img_dir = os.path.join(app.static_folder, "img", "tvguide")
-    img_files = os.listdir(img_dir) if os.path.exists(img_dir) else []
-    random_images = random.sample(img_files, min(3, len(img_files)))
 
     return render_template(
         "view_schedule.html",
-        entries=entries,
-        random_images=random_images,
-        banner=banner,
-        schedule_name="Tonight's Schedule"  # replace with JSON-driven schedule name later
+        entries=data.get("entries", []),
+        banner=data.get("banner"),
+        random_images=data.get("random_images", []),
+        schedule_name=f"{data.get('channel_name', 'Channel')} Schedule"
     )
+
+
 
 @app.route("/config", methods=["GET"])
 def get_config():
@@ -94,6 +61,37 @@ def get_queued():
     with open("queued.json", "r") as f:
         data = json.load(f)
     return jsonify(data)
+
+@app.route("/multi_schedule")
+def multi_schedule():
+    cfg = load_config()
+    peers = cfg.get("system", {}).get("peers", [])
+
+    all_channels = []
+
+    for peer in peers:
+        try:
+            r = requests.get(peer["url"], timeout=3)
+            r.raise_for_status()
+            data = r.json()
+            all_channels.append({
+                "channel_name": data.get("channel_name", peer["name"]),
+                "entries": data.get("entries", []),
+                "banner": data.get("banner"),
+                "random_images": data.get("random_images", [])
+            })
+        except Exception as ex:
+            all_channels.append({
+                "channel_name": peer["name"],
+                "entries": [],
+                "error": str(ex)
+            })
+
+    return render_template(
+        "multi_schedule.html",
+        channels=all_channels,
+        schedule_name="Multi-Channel TV Guide"
+    )
 
 def run_flask():
 

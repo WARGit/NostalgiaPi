@@ -37,7 +37,6 @@ def main():
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-
     # Call method to ensure durations for all files have been calculated, if not they will be re-calculated
     ensure_durations_have_been_calculated(schedules)
 
@@ -47,7 +46,7 @@ def main():
 
     # construct objects
     tracker         = PlayedTracker() # Track played items
-    queued_tracker  = QueuedTracker() # Track queued items
+    queued_tracker  = QueuedTracker(config) # Track queued items
     planner         = QueuePlanner(config, tracker, queued_tracker, durations_json, system) # plans the queue of shows/ads/bumpers
 
     # build the playlist
