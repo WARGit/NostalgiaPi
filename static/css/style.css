@@ -132,3 +132,48 @@ body {
       opacity: 0.9;
       max-width: 120px;
     }
+
+/* TV GUIDE/LAYOUT */
+.channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.channel-card {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.channel-card:hover {
+  transform: translateY(-4px);
+}
+
+.entry {
+  background-color: #ffffff;
+  border-radius: 6px;
+  margin: 10px 0;
+  padding: 8px;
+  text-align: left;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.entry .time {
+  color: #B51744;
+  font-weight: bold;
+}
+
+.entry .title {
+  font-size: 14px;
+  color: #333;
+  margin-top: 3px;
+}
+

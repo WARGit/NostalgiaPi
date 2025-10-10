@@ -37,7 +37,7 @@ def view_schedule():
         entries=data.get("entries", []),
         banner=data.get("banner"),
         random_images=data.get("random_images", []),
-        schedule_name=f"{data.get('channel_name', 'Channel')} Schedule"
+        channel_name=f"{data.get('channel_name', 'Channel')} Schedule"
     )
 
 
@@ -90,7 +90,7 @@ def multi_schedule():
     return render_template(
         "multi_schedule.html",
         channels=all_channels,
-        schedule_name="Multi-Channel TV Guide"
+        schedule_name="TV Guide"
     )
 
 def run_flask():

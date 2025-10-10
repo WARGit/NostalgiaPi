@@ -1,36 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Multi-Channel Schedule</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body { font-family: sans-serif; background: #111; color: #eee; }
-        h1 { text-align: center; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
-        .channel { background: #222; padding: 1rem; border-radius: 10px; }
-        .channel h2 { text-align: center; margin-bottom: 10px; }
-        .entry { background: #333; margin: 0.5rem 0; padding: 0.5rem; border-radius: 6px; }
-        .time { font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>Multi-Channel Schedule</h1>
-    <div class="grid">
-        {% for channel in channels %}
-            <div class="channel">
-                <h2>{{ channel.channel_name }}</h2>
-                {% if channel.entries %}
-                    {% for entry in channel.entries %}
-                        <div class="entry">
-                            <div class="time">{{ entry.start_time }}</div>
-                            <div class="title">{{ entry.title }}</div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p>No schedule</p>
-                {% endif %}
-            </div>
-        {% endfor %}
-    </div>
-</body>
-</html>
+
+{% extends "base.html" %}
+{% block title %}Multi-Channel Schedule{% endblock %}
+{% block content %}
+<h1>{{ schedule_name }}</h1>
+<div class="channels-grid">
+    {% for channel in channels %}
+        <div class="channel-card">
+            <h2>{{ channel.channel_name }}</h2>
+
+            {% if channel.entries %}
+                {% for entry in channel.entries %}
+                    <div class="entry">
+                        <div class="time"><strong>{{ entry.time }}</strong></div>
+                        <div class="title">{{ entry.filepath }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No schedule</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
