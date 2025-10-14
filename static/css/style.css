@@ -1,11 +1,12 @@
-/* Reset basics */
+/* RESET BASICS */
 body {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: #000000;
 }
 
-/* Sidebar */
+/* SIDEBAR */
+/* Collapsable side navigation panel (slides in and out from left hand side) */
 .sidebar {
     height: 100%;
     width: 0;
@@ -19,6 +20,8 @@ body {
     padding-top: 60px;
 }
 
+/* Defines link styles inside the sidebar (i.e the menu items) */
+/* Applies to any <a> href type links */
 .sidebar a {
     padding: 10px 20px;
     text-decoration: none;
@@ -28,10 +31,13 @@ body {
     transition: 0.2s;
 }
 
+/* Hover effect for the navigation links inside the sidebar */
+/* Applies when you hover over any <a> href type links */
 .sidebar a:hover {
-    background-color: #0056b3;
+    background-color: #56A02F;
 }
 
+/* Used for the x button to close the sidebar */
 .sidebar .closebtn {
     position: absolute;
     top: 15px;
@@ -40,7 +46,8 @@ body {
     color: white;
 }
 
-/* Main area */
+
+/* MAIN AREA */
 .main {
     margin-left: 0;
     transition: margin-left .3s;
@@ -48,7 +55,7 @@ body {
     text-align: center;
 }
 
-/* Hamburger icon */
+/* HAMBURGER ICON */
 .hamburger {
     font-size: 30px;
     cursor: pointer;
@@ -59,21 +66,19 @@ body {
 }
 
 /* Center content */
+/* Centers content  on the page with a small margin*/
 .content {
     margin-top: 100px;
 }
 
+/* Used for size and alignment of NostalgiaPi Logo */
 .logo {
     width: 512px;
     margin-bottom: 10px;
 }
 
-/* Text under Logo */
+/* Used for text under NostalgiaPi Logo */
 .home-title {
-  color: #F1B61C;
-}
-
-.now-playing {
   color: #F1B61C;
 }
 
@@ -132,3 +137,99 @@ body {
       opacity: 0.9;
       max-width: 120px;
     }
+
+/* TV GUIDE/LAYOUT */
+.channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.channel-card {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.channel-card:hover {
+  transform: translateY(-4px);
+}
+
+.channel {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 600px;
+}
+
+.channel h2 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #B51744;
+}
+
+.entry {
+  background-color: #ffffff;
+  border-radius: 6px;
+  margin: 10px 0;
+  padding: 8px;
+  text-align: left;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.entry .time {
+  color: #B51744;
+  font-weight: bold;
+}
+
+.entry .title {
+  font-size: 14px;
+  color: #333;
+  margin-top: 3px;
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: flex-start;
+}
+
+.left-banner img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.schedule-container {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.time {
+  font-weight: bold;
+  color: #B51744;
+}
+
+.title {
+  color: #222;
+}
+
+

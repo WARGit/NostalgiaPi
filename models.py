@@ -70,6 +70,7 @@ class System:
     hour: int
     minute: int
     bumper_chance: float
+    channel_name: str
     create_debug_file: bool = False  # default = off
 
     @staticmethod
@@ -79,7 +80,8 @@ class System:
             hour=data.get("hour", 2),              # default 02:00 if missing
             minute=data.get("minute", 0),           # default to 0 if missing
             bumper_chance = float(data.get("bumper_chance", 0.5)), # default to 50% chance
-            create_debug_file = bool(data.get("create_debug_file", False)) # determines if debug log will be used
+            create_debug_file = bool(data.get("create_debug_file", False)), # determines if debug log will be used
+            channel_name = data.get("channel_name", "NostalgiaPi")  # Name of Channel
         )
 
 # Class representing the config file

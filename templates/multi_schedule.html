@@ -1,0 +1,34 @@
+
+{% extends "base.html" %}
+{% block title %}Multi-Channel Schedule{% endblock %}
+{% block content %}
+
+<h1 class="home-title">{{ schedule_name }}</h1>
+
+<div class="schedule-container">
+    {% if channels and channels[0].banner %}
+        <div class="left-banner">
+            <img src="{{ channels[0].banner }}" alt="Schedule banner">
+        </div>
+    {% endif %}
+
+<div class="channels-grid">
+    {% for channel in channels %}
+        <div class="channel-card">
+            <h2>{{ channel.channel_name }}</h2>
+
+            {% if channel.entries %}
+                {% for entry in channel.entries %}
+                    <div class="entry">
+                        <div class="time"><strong>{{ entry.time }}</strong></div>
+                        <div class="title">{{ entry.filepath }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No schedule</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+</div>
+{% endblock %}

@@ -181,14 +181,34 @@ both config files are the same, the only real difference is the paths for window
 	    "bumper_chance": 0.7
     }
   },
-	"system": {
-	  "action": "restart",
-	  "hour": 3,
-	  "minute": 0
+  "system": {
+    "action": "restart",
+    "hour": 3,
+    "minute": 0,
+	"create_debug_file": false,
+    "webuiport": 8080,
+	"channel_name": "90s overload",
+	"peers": [
+      {
+        "name": "Living Room",
+        "url": "http://192.168.1.1:8080/queued"
+      },
+	  {
+        "name": "Kitchen",
+        "url": "http://192.168.1.2:8080/queued"
+      },
+	  {
+		"name": "Bedroom",
+        "url": "http://192.168.1.3:8080/queued"
+      }
+    ]
   }
 }
 ```
 The "action" property under system can be restart (which restarts the script) or shutdown, which shuts the pi down
+
+Multiple Pis can be used together to create multiple channels, the schedule viewer on the web interface will dynamically display any number of channels
+Each channel can have a unique name, it is recommended to have 1 "master" pi that has the peers listed, the other pis should just supply a channel_name value
 
 The above json file will be included in the repo to use as a template.
 
