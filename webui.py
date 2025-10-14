@@ -27,21 +27,6 @@ def home():
 def wizard():
     return render_template("wizard.html")
 
-@app.route("/view_schedule")
-def view_schedule():
-    with open("queued.json", "r") as f:
-        data = json.load(f)
-
-    return render_template(
-        "view_schedule.html",
-        entries=data.get("entries", []),
-        banner=data.get("banner"),
-        random_images=data.get("random_images", []),
-        channel_name=f"{data.get('channel_name', 'Channel')} Schedule"
-    )
-
-
-
 @app.route("/config", methods=["GET"])
 def get_config():
     cfg = load_config()
