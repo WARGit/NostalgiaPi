@@ -5,6 +5,13 @@ body {
     background-color: #000000;
 }
 
+body.wizard {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #F0F0F0;
+}
+
+
 /* SIDEBAR */
 /* Collapsable side navigation panel (slides in and out from left hand side) */
 .sidebar {
