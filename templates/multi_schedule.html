@@ -1,9 +1,10 @@
-
 {% extends "base.html" %}
 {% block title %}Multi-Channel Schedule{% endblock %}
 {% block content %}
 
-<h1 class="home-title">{{ schedule_name }}</h1>
+<heading class="{{ request.endpoint|default('') }}">TV Guide</heading>
+<!-- Add a page-specific class to the body E.g. body.multischedule or body.something else in the css -->
+<!-- <body class="{{ request.endpoint|default('') }}"> -->
 
 <div class="schedule-container">
     {% if channels and channels[0].banner %}

@@ -62,7 +62,6 @@ def multi_schedule():
             all_channels.append({
                 "channel_name": data.get("channel_name", peer["name"]),
                 "entries": data.get("entries", []),
-                "banner": data.get("banner"),
                 "random_images": data.get("random_images", [])
             })
         except Exception as ex:
@@ -72,10 +71,15 @@ def multi_schedule():
                 "error": str(ex)
             })
 
+    # Get the current month as a number (1–12)
+    month_number = datetime.now().month
+    # border_color = month_colors.get(month_number, "#FFFFFF")    # get colour, if fail default to white
+
     return render_template(
         "multi_schedule.html",
         channels=all_channels,
-        schedule_name="TV Guide"
+        schedule_name="TV Guide",
+        banner=f"/static/img/banners/{month_number}.png"
     )
 
 def run_flask():

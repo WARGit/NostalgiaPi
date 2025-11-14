@@ -5,7 +5,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </head>
-<body>
+
+<!-- Add a page-specific class to the body E.g. body.multischedule or body.something else in the css -->
+<body class="{{ request.endpoint|default('') }}">
+
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
     <a href="javascript:void(0)" class="closebtn" onclick="toggleSidebar()">&times;</a>

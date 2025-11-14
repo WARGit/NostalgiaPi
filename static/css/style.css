@@ -53,6 +53,22 @@ body {
     transition: margin-left .3s;
     padding: 20px;
     text-align: center;
+    /* background: #F1B61C -- When set changes the whole background color on the home and the mutli schedule page
+        Because the multi schedule page is built from the base HTML and this .main is referenced in it
+    */
+}
+
+body.multi_schedule .main {
+  background-image: url("/static/img/newspaper.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Used for "TV Guide" Heading Text on Multi Schedule Page */
+heading.multi_schedule {
+    color: #000000;   /* Black Text */
+    font-size: 30px;
 }
 
 /* HAMBURGER ICON */
@@ -77,9 +93,11 @@ body {
     margin-bottom: 10px;
 }
 
-/* Used for text under NostalgiaPi Logo */
+/* Used for text under NostalgiaPi Logo and "TV Guide" Heading Text on Multi Schedule Page */
 .home-title {
-  color: #F1B61C;
+    color: #F1B61C;
+    /*background: #F1B61C -- Sets a background across where the text is */
+
 }
 
 /* TV Guide / TV Schedule Page OLD */
@@ -150,17 +168,19 @@ body {
 }
 
 .channel-card {
-  background-color: #f8f9fa;
+  /*background-color: #f8f9fa;*/
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  /*box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);*/
   padding: 15px;
   text-align: center;
-  transition: transform 0.2s ease;
+  /*transition: transform 0.2s ease;*/
 }
 
+/*
 .channel-card:hover {
   transform: translateY(-4px);
 }
+*/
 
 .channel {
   background-color: #f8f9fa;
