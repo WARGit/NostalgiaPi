@@ -6,13 +6,6 @@
 <!-- Add a page-specific class to the body E.g. body.multischedule or body.something else in the css -->
 <!-- <body class="{{ request.endpoint|default('') }}"> -->
 
-<div class="schedule-container">
-    {% if channels and channels[0].banner %}
-        <div class="left-banner">
-            <img src="{{ channels[0].banner }}" alt="Schedule banner">
-        </div>
-    {% endif %}
-
 <div class="channels-grid">
     {% for channel in channels %}
         <div class="channel-card">

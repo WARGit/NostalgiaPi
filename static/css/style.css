@@ -11,7 +11,6 @@ body.wizard {
     background-color: #F0F0F0;
 }
 
-
 /* SIDEBAR */
 /* Collapsable side navigation panel (slides in and out from left hand side) */
 .sidebar {
@@ -104,7 +103,10 @@ heading.multi_schedule {
 .home-title {
     color: #F1B61C;
     /*background: #F1B61C -- Sets a background across where the text is */
+}
 
+.home-slogan {
+    color: #F1B61C;
 }
 
 /* TV Guide / TV Schedule Page OLD */
